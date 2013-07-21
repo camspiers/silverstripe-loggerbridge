@@ -1,0 +1,20 @@
+{
+    "name": "camspiers/silverstripe-loggerbridge",
+    "description": "Provides a bridge between PSR-3 loggers (like monolog) and SilverStripe",
+    "type": "silverstripe-module",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Cam Spiers",
+            "email": "cameron@heyday.co.nz",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "composer/installers": "~1.0",
+        "monolog/monolog": "~1.5.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "~3.7"
+    }
+}
