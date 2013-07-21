@@ -27,7 +27,7 @@ class LoggerBridge
     protected $exceptionHandler;
     /**
      * @param \Psr\Log\LoggerInterface $logger
-     * @param bool $showErrors
+     * @param bool                     $showErrors If false stops the display of SilverStripe errors
      */
     public function __construct(Psr\Log\LoggerInterface $logger, $showErrors = true)
     {
@@ -35,6 +35,7 @@ class LoggerBridge
         $this->showErrors = $showErrors;
     }
     /**
+     * This hook function is executed from RequestProcessor before the request starts
      * @param $request
      * @param $session
      * @param $model
@@ -49,6 +50,7 @@ class LoggerBridge
         return true;
     }
     /**
+     * This hook function is executed from RequestProcessor after the request ends
      * @param $request
      * @param $session
      * @param $model
@@ -59,6 +61,7 @@ class LoggerBridge
         if ($this->registered) {
             $this->deregisterGlobalHandlers();
         }
+
         return true;
     }
     /**
@@ -97,7 +100,7 @@ class LoggerBridge
         $this->registered = false;
     }
     /**
-     * The general error handler that is added via set_error_handler
+     * Handlers general errors, user, warn and notice
      * @param $errno
      * @param $errstr
      * @param $errfile
@@ -162,10 +165,10 @@ class LoggerBridge
     }
     /**
      * Handles uncaught exceptions
-     * @param Exception $exception
-     * @param           $request
-     * @param           $session
-     * @param           $model
+     * @param  Exception   $exception
+     * @param              $request
+     * @param              $session
+     * @param              $model
      * @return string|void
      */
     public function exceptionHandler(Exception $exception, $request, $session, $model)
@@ -196,7 +199,7 @@ class LoggerBridge
         }
     }
     /**
-     * Capture fatal errors
+     * Handles fatal errors
      */
     public function fatalHandler($request, $session, $model)
     {
