@@ -10,6 +10,18 @@ class LoggerBridge
      */
     protected $logger;
     /**
+     * @var bool
+     */
+    protected $registered = false;
+    /**
+     * @var null|callable
+     */
+    protected $errorHandler;
+    /**
+     * @var null|callable
+     */
+    protected $exceptionHandler;
+    /**
      * @param \Psr\Log\LoggerInterface $logger
      */
     public function __construct(Psr\Log\LoggerInterface $logger)
@@ -24,7 +36,9 @@ class LoggerBridge
      */
     public function preRequest($request, $session, $model)
     {
-        $this->registerGlobalHandlers();
+        if (!$this->registered) {
+            $this->registerGlobalHandlers($request, $session, $model);
+        }
 
         return true;
     }
@@ -36,25 +50,55 @@ class LoggerBridge
      */
     public function postRequest($request, $session, $model)
     {
+        if ($this->registered) {
+            $this->deregisterGlobalHandlers();
+        }
         return true;
     }
     /**
      * Registers global error handlers
      */
-    public function registerGlobalHandlers()
+    public function registerGlobalHandlers($request, $session, $model)
     {
-        set_error_handler(array($this, 'errorHandler'));
-        set_exception_handler(array($this, 'exceptionHandler'));
-        register_shutdown_function(array($this, 'fatalHandler'));
+        $that = $this;
+        $this->errorHandler = set_error_handler(
+            function ($errno, $errstr, $errfile, $errline) use ($that, $request, $session, $model) {
+                $that->errorHandler(
+                    $errno, $errstr, $errfile, $errline,
+                    $request, $session, $model
+                );
+            }
+        );
+        $this->exceptionHandler = set_exception_handler(
+            function (Exception $exception) use ($that, $request, $session, $model) {
+                $that->exceptionHandler($exception, $request, $session, $model);
+            }
+        );
+        register_shutdown_function(
+            function () use ($that, $request, $session, $model) {
+                $that->fatalHandler($request, $session, $model);
+            }
+        );
+        $this->registered = true;
+    }
+    /**
+     * Removes handlers we have added, and restores others if possible
+     */
+    public function deregisterGlobalHandlers()
+    {
+        set_error_handler($this->errorHandler);
+        set_error_handler($this->exceptionHandler);
     }
     /**
      * @param $errno
      * @param $errstr
      * @param $errfile
      * @param $errline
-     * @return bool|string|void
+     * @param $request
+     * @param $session
+     * @param $model
      */
-    public function errorHandler($errno, $errstr, $errfile, $errline)
+    public function errorHandler($errno, $errstr, $errfile, $errline, $request, $session, $model)
     {
         switch ($errno) {
             case E_ERROR:
@@ -64,7 +108,10 @@ class LoggerBridge
                     $errstr,
                     array(
                         'errfile' => $errfile,
-                        'errline' => $errline
+                        'errline' => $errline,
+                        'request' => print_r($request, true),
+                        'session' => print_r($session, true),
+                        'model'   => print_r($model, true)
                     )
                 );
                 break;
@@ -76,7 +123,10 @@ class LoggerBridge
                     $errstr,
                     array(
                         'errfile' => $errfile,
-                        'errline' => $errline
+                        'errline' => $errline,
+                        'request' => print_r($request, true),
+                        'session' => print_r($session, true),
+                        'model'   => print_r($model, true)
                     )
                 );
                 break;
@@ -90,7 +140,10 @@ class LoggerBridge
                     $errstr,
                     array(
                         'errfile' => $errfile,
-                        'errline' => $errline
+                        'errline' => $errline,
+                        'request' => print_r($request, true),
+                        'session' => print_r($session, true),
+                        'model'   => print_r($model, true)
                     )
                 );
                 break;
@@ -98,15 +151,26 @@ class LoggerBridge
     }
     /**
      * @param Exception $exception
+     * @param           $request
+     * @param           $session
+     * @param           $model
      */
-    public function exceptionHandler(Exception $exception)
+    public function exceptionHandler(Exception $exception, $request, $session, $model)
     {
-        $this->logger->error($exception->getMessage(), array('exception' => $exception));
+        $this->logger->error(
+            $exception->getMessage(),
+            array(
+                'exception' => $exception,
+                'request'   => print_r($request, true),
+                'session'   => print_r($session, true),
+                'model'     => print_r($model, true)
+            )
+        );
     }
     /**
      * Capture fatal errors
      */
-    public function fatalHandler()
+    public function fatalHandler($request, $session, $model)
     {
         $error = error_get_last();
         if ($error) {
@@ -114,9 +178,33 @@ class LoggerBridge
                 $error['message'],
                 array(
                     'errfile' => $error['file'],
-                    'errline' => $error['line']
+                    'errline' => $error['line'],
+                    'request' => print_r($request, true),
+                    'session' => print_r($session, true),
+                    'model'   => print_r($model, true)
                 )
             );
         }
+    }
+    /**
+     * @param \Psr\Log\LoggerInterface $logger
+     */
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+    }
+    /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+    /**
+     * @return boolean
+     */
+    public function getRegistered()
+    {
+        return $this->registered;
     }
 }
