@@ -211,8 +211,7 @@ class LoggerBridge
                 $error['type'],
                 array(
                     E_ERROR,
-                    E_CORE_ERROR,
-                    E_USER_ERROR
+                    E_CORE_ERROR
                 )
             )
         ) {
