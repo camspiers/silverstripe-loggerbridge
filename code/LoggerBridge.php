@@ -94,8 +94,10 @@ class LoggerBridge
     {
         set_error_handler($this->errorHandler);
         set_exception_handler($this->exceptionHandler);
+        $this->registered = false;
     }
     /**
+     * The general error handler that is added via set_error_handler
      * @param $errno
      * @param $errstr
      * @param $errfile
@@ -159,6 +161,7 @@ class LoggerBridge
         }
     }
     /**
+     * Handles uncaught exceptions
      * @param Exception $exception
      * @param           $request
      * @param           $session
@@ -177,15 +180,17 @@ class LoggerBridge
             )
         );
 
-        if ($this->showErrors && Director::isDev()) {
-            Debug::showError(
-                E_USER_ERROR,
-                $message,
-                $exception->getFile(),
-                $exception->getLine(),
-                false,
-                'Error'
-            );
+        if (Director::isDev()) {
+            if ($this->showErrors) {
+                Debug::showError(
+                    E_USER_ERROR,
+                    $message,
+                    $exception->getFile(),
+                    $exception->getLine(),
+                    false,
+                    'Error'
+                );
+            }
         } else {
             Debug::friendlyError();
         }
