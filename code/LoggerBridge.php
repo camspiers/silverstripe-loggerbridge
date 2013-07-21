@@ -14,6 +14,10 @@ class LoggerBridge
      */
     protected $registered = false;
     /**
+     * @var bool
+     */
+    protected $showErrors = true;
+    /**
      * @var null|callable
      */
     protected $errorHandler;
@@ -23,10 +27,12 @@ class LoggerBridge
     protected $exceptionHandler;
     /**
      * @param \Psr\Log\LoggerInterface $logger
+     * @param bool $showErrors
      */
-    public function __construct(Psr\Log\LoggerInterface $logger)
+    public function __construct(Psr\Log\LoggerInterface $logger, $showErrors = true)
     {
         $this->logger = $logger;
+        $this->showErrors = $showErrors;
     }
     /**
      * @param $request
@@ -87,7 +93,7 @@ class LoggerBridge
     public function deregisterGlobalHandlers()
     {
         set_error_handler($this->errorHandler);
-        set_error_handler($this->exceptionHandler);
+        set_exception_handler($this->exceptionHandler);
     }
     /**
      * @param $errno
@@ -97,23 +103,32 @@ class LoggerBridge
      * @param $request
      * @param $session
      * @param $model
+     * @return bool|string|void
      */
     public function errorHandler($errno, $errstr, $errfile, $errline, $request, $session, $model)
     {
+        $context = array(
+            'errfile' => $errfile,
+            'errline' => $errline,
+            'request' => print_r($request, true),
+            'session' => print_r($session, true),
+            'model'   => print_r($model, true)
+        );
         switch ($errno) {
             case E_ERROR:
             case E_CORE_ERROR:
             case E_USER_ERROR:
                 $this->logger->error(
                     $errstr,
-                    array(
-                        'errfile' => $errfile,
-                        'errline' => $errline,
-                        'request' => print_r($request, true),
-                        'session' => print_r($session, true),
-                        'model'   => print_r($model, true)
-                    )
+                    $context
                 );
+                if (Director::isDev() || Director::is_cli()) {
+                    if ($this->showErrors) {
+                        Debug::showError($errno, $errstr, $errfile, $errline, false, 'Error');
+                    }
+                } else {
+                    Debug::friendlyError();
+                }
                 break;
 
             case E_WARNING:
@@ -121,14 +136,11 @@ class LoggerBridge
             case E_USER_WARNING:
                 $this->logger->warning(
                     $errstr,
-                    array(
-                        'errfile' => $errfile,
-                        'errline' => $errline,
-                        'request' => print_r($request, true),
-                        'session' => print_r($session, true),
-                        'model'   => print_r($model, true)
-                    )
+                    $context
                 );
+                if ($this->showErrors && Director::isDev()) {
+                    Debug::showError($errno, $errstr, $errfile, $errline, false, 'Warning');
+                }
                 break;
 
             case E_NOTICE:
@@ -138,14 +150,11 @@ class LoggerBridge
             case E_STRICT:
                 $this->logger->notice(
                     $errstr,
-                    array(
-                        'errfile' => $errfile,
-                        'errline' => $errline,
-                        'request' => print_r($request, true),
-                        'session' => print_r($session, true),
-                        'model'   => print_r($model, true)
-                    )
+                    $context
                 );
+                if ($this->showErrors && Director::isDev()) {
+                    Debug::showError($errno, $errstr, $errfile, $errline, false, 'Notice');
+                }
                 break;
         }
     }
@@ -154,18 +163,32 @@ class LoggerBridge
      * @param           $request
      * @param           $session
      * @param           $model
+     * @return string|void
      */
     public function exceptionHandler(Exception $exception, $request, $session, $model)
     {
         $this->logger->error(
-            $exception->getMessage(),
-            array(
+            $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
+            $context = array(
                 'exception' => $exception,
                 'request'   => print_r($request, true),
                 'session'   => print_r($session, true),
                 'model'     => print_r($model, true)
             )
         );
+
+        if ($this->showErrors && Director::isDev()) {
+            Debug::showError(
+                E_USER_ERROR,
+                $message,
+                $exception->getFile(),
+                $exception->getLine(),
+                false,
+                'Error'
+            );
+        } else {
+            Debug::friendlyError();
+        }
     }
     /**
      * Capture fatal errors
@@ -173,7 +196,18 @@ class LoggerBridge
     public function fatalHandler($request, $session, $model)
     {
         $error = error_get_last();
-        if ($error) {
+        if (
+            $error
+            &&
+            in_array(
+                $error['type'],
+                array(
+                    E_ERROR,
+                    E_CORE_ERROR,
+                    E_USER_ERROR
+                )
+            )
+        ) {
             $this->logger->critical(
                 $error['message'],
                 array(
