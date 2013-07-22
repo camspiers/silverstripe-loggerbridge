@@ -1,7 +1,10 @@
 <?php
 
 /**
- * Class LoggerBridge
+ * Enables global SilverStripe logging with a PSR-3 logger like Monolog.
+ * 
+ * The logger is attached in by using a RequestProcessor filter. This behaviour is required
+ * so the logger is attached after the environment 
  * @author Cam Spiers <camspiers@gmail.com>
  */
 class LoggerBridge implements RequestFilter
