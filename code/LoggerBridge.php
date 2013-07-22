@@ -27,6 +27,14 @@ class LoggerBridge
      */
     protected $exceptionHandler;
     /**
+     * @var SS_HTTPRequest
+     */
+    protected $request;
+    /**
+     * @var DataModel
+     */
+    protected $model;
+    /**
      * @param \Psr\Log\LoggerInterface $logger
      * @param bool                     $showErrors If false stops the display of SilverStripe errors
      */
@@ -70,25 +78,11 @@ class LoggerBridge
      */
     public function registerGlobalHandlers($request, $model)
     {
-        $that = $this;
-        $this->errorHandler = set_error_handler(
-            function ($errno, $errstr, $errfile, $errline) use ($that, $request, $model) {
-                $that->errorHandler(
-                    $errno, $errstr, $errfile, $errline,
-                    $request, $model
-                );
-            }
-        );
-        $this->exceptionHandler = set_exception_handler(
-            function (Exception $exception) use ($that, $request, $model) {
-                $that->exceptionHandler($exception, $request, $model);
-            }
-        );
-        register_shutdown_function(
-            function () use ($that, $request, $model) {
-                $that->fatalHandler($request, $model);
-            }
-        );
+        $this->request = $request;
+        $this->model = $model;
+        $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
+        $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
+        register_shutdown_function(array($this, 'fatalHandler'));
         $this->registered = true;
     }
     /**
@@ -96,6 +90,8 @@ class LoggerBridge
      */
     public function deregisterGlobalHandlers()
     {
+        $this->request = null;
+        $this->model = null;
         set_error_handler($this->errorHandler);
         set_exception_handler($this->exceptionHandler);
         $this->registered = false;
@@ -106,17 +102,15 @@ class LoggerBridge
      * @param $errstr
      * @param $errfile
      * @param $errline
-     * @param $request
-     * @param $model
      * @return bool|string|void
      */
-    public function errorHandler($errno, $errstr, $errfile, $errline, $request, $model)
+    public function errorHandler($errno, $errstr, $errfile, $errline)
     {
         $context = array(
             'errfile' => $errfile,
             'errline' => $errline,
-            'request' => print_r($request, true),
-            'model'   => print_r($model, true)
+            'request' => print_r($this->request, true),
+            'model'   => print_r($this->model, true)
         );
         switch ($errno) {
             case E_ERROR:
@@ -165,19 +159,17 @@ class LoggerBridge
     /**
      * Handles uncaught exceptions
      * @param  Exception   $exception
-     * @param              $request
-     * @param              $model
      * @return string|void
      */
-    public function exceptionHandler(Exception $exception, $request, $model)
+    public function exceptionHandler(Exception $exception)
     {
         $this->logger->error(
             $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
             $context = array(
                 'errfile'   => $exception->getFile(),
                 'errline'   => $exception->getLine(),
-                'request'   => print_r($request, true),
-                'model'     => print_r($model, true)
+                'request'   => print_r($this->request, true),
+                'model'     => print_r($this->model, true)
             )
         );
 
@@ -199,7 +191,7 @@ class LoggerBridge
     /**
      * Handles fatal errors
      */
-    public function fatalHandler($request, $model)
+    public function fatalHandler()
     {
         $error = error_get_last();
         if (
@@ -218,8 +210,8 @@ class LoggerBridge
                 array(
                     'errfile' => $error['file'],
                     'errline' => $error['line'],
-                    'request' => print_r($request, true),
-                    'model'   => print_r($model, true)
+                    'request' => print_r($this->request, true),
+                    'model'   => print_r($this->model, true)
                 )
             );
         }
