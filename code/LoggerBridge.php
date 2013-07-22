@@ -74,7 +74,7 @@ class LoggerBridge implements RequestFilter
      * @param SS_HTTPRequest $request
      * @param DataModel      $model
      */
-    public function registerGlobalHandlers(SS_HTTPRequest $request, DataModel $model)
+    public function registerGlobalHandlers(SS_HTTPRequest $request = null, DataModel $model = null)
     {
         if (!$this->registered) {
             $this->request = $request;
