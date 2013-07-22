@@ -4,7 +4,7 @@
  * Class LoggerBridge
  * @author Cam Spiers <camspiers@gmail.com>
  */
-class LoggerBridge
+class LoggerBridge implements RequestFilter
 {
     /**
      * @var Psr\Log\LoggerInterface
@@ -45,12 +45,12 @@ class LoggerBridge
     }
     /**
      * This hook function is executed from RequestProcessor before the request starts
-     * @param $request
-     * @param $session
-     * @param $model
+     * @param SS_HTTPRequest $request
+     * @param Session        $session
+     * @param DataModel      $model
      * @return bool
      */
-    public function preRequest($request, $session, $model)
+    public function preRequest(SS_HTTPRequest $request, Session $session, DataModel $model)
     {
         if (!$this->registered) {
             $this->registerGlobalHandlers($request, $model);
@@ -60,12 +60,12 @@ class LoggerBridge
     }
     /**
      * This hook function is executed from RequestProcessor after the request ends
-     * @param $request
-     * @param $session
-     * @param $model
+     * @param SS_HTTPRequest  $request
+     * @param SS_HTTPResponse $response
+     * @param DataModel       $model
      * @return bool
      */
-    public function postRequest($request, $session, $model)
+    public function postRequest(SS_HTTPRequest $request, SS_HTTPResponse $response, DataModel $model)
     {
         if ($this->registered) {
             $this->deregisterGlobalHandlers();
