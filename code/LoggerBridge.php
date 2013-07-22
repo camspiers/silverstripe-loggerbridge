@@ -52,9 +52,7 @@ class LoggerBridge implements RequestFilter
      */
     public function preRequest(SS_HTTPRequest $request, Session $session, DataModel $model)
     {
-        if (!$this->registered) {
-            $this->registerGlobalHandlers($request, $model);
-        }
+        $this->registerGlobalHandlers($request, $model);
 
         return true;
     }
@@ -67,34 +65,38 @@ class LoggerBridge implements RequestFilter
      */
     public function postRequest(SS_HTTPRequest $request, SS_HTTPResponse $response, DataModel $model)
     {
-        if ($this->registered) {
-            $this->deregisterGlobalHandlers();
-        }
+        $this->deregisterGlobalHandlers();
 
         return true;
     }
     /**
      * Registers global error handlers
+     * @param SS_HTTPRequest $request
+     * @param DataModel      $model
      */
-    public function registerGlobalHandlers($request, $model)
+    public function registerGlobalHandlers(SS_HTTPRequest $request, DataModel $model)
     {
-        $this->request = $request;
-        $this->model = $model;
-        $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
-        $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
-        register_shutdown_function(array($this, 'fatalHandler'));
-        $this->registered = true;
+        if (!$this->registered) {
+            $this->request = $request;
+            $this->model = $model;
+            $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
+            $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
+            register_shutdown_function(array($this, 'fatalHandler'));
+            $this->registered = true;
+        }
     }
     /**
      * Removes handlers we have added, and restores others if possible
      */
     public function deregisterGlobalHandlers()
     {
-        $this->request = null;
-        $this->model = null;
-        set_error_handler($this->errorHandler);
-        set_exception_handler($this->exceptionHandler);
-        $this->registered = false;
+        if ($this->registered) {
+            $this->request = null;
+            $this->model = null;
+            set_error_handler($this->errorHandler);
+            set_exception_handler($this->exceptionHandler);
+            $this->registered = false;
+        }
     }
     /**
      * Handlers general errors, user, warn and notice
