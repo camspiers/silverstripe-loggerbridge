@@ -32,3 +32,8 @@ Provides easy usage of `PSR-3` loggers (like [Monolog](https://github.com/Seldae
 
     $ composer install --dev
     $ vendor/bin/phpunit
+    
+---
+##License
+
+SilverStripe Logger Bridge is released under the [MIT license](http://camspiers.mit-license.org/)

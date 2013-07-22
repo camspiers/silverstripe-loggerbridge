@@ -2,6 +2,7 @@
 
 /**
  * Class LoggerBridge
+ * @author Cam Spiers <camspiers@gmail.com>
  */
 class LoggerBridge
 {
