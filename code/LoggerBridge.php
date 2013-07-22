@@ -45,7 +45,7 @@ class LoggerBridge
     public function preRequest($request, $session, $model)
     {
         if (!$this->registered) {
-            $this->registerGlobalHandlers($request, $session, $model);
+            $this->registerGlobalHandlers($request, $model);
         }
 
         return true;
@@ -68,25 +68,25 @@ class LoggerBridge
     /**
      * Registers global error handlers
      */
-    public function registerGlobalHandlers($request, $session, $model)
+    public function registerGlobalHandlers($request, $model)
     {
         $that = $this;
         $this->errorHandler = set_error_handler(
-            function ($errno, $errstr, $errfile, $errline) use ($that, $request, $session, $model) {
+            function ($errno, $errstr, $errfile, $errline) use ($that, $request, $model) {
                 $that->errorHandler(
                     $errno, $errstr, $errfile, $errline,
-                    $request, $session, $model
+                    $request, $model
                 );
             }
         );
         $this->exceptionHandler = set_exception_handler(
-            function (Exception $exception) use ($that, $request, $session, $model) {
-                $that->exceptionHandler($exception, $request, $session, $model);
+            function (Exception $exception) use ($that, $request, $model) {
+                $that->exceptionHandler($exception, $request, $model);
             }
         );
         register_shutdown_function(
-            function () use ($that, $request, $session, $model) {
-                $that->fatalHandler($request, $session, $model);
+            function () use ($that, $request, $model) {
+                $that->fatalHandler($request, $model);
             }
         );
         $this->registered = true;
@@ -107,17 +107,15 @@ class LoggerBridge
      * @param $errfile
      * @param $errline
      * @param $request
-     * @param $session
      * @param $model
      * @return bool|string|void
      */
-    public function errorHandler($errno, $errstr, $errfile, $errline, $request, $session, $model)
+    public function errorHandler($errno, $errstr, $errfile, $errline, $request, $model)
     {
         $context = array(
             'errfile' => $errfile,
             'errline' => $errline,
             'request' => print_r($request, true),
-            'session' => print_r($session, true),
             'model'   => print_r($model, true)
         );
         switch ($errno) {
@@ -168,18 +166,17 @@ class LoggerBridge
      * Handles uncaught exceptions
      * @param  Exception   $exception
      * @param              $request
-     * @param              $session
      * @param              $model
      * @return string|void
      */
-    public function exceptionHandler(Exception $exception, $request, $session, $model)
+    public function exceptionHandler(Exception $exception, $request, $model)
     {
         $this->logger->error(
             $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
             $context = array(
-                'exception' => $exception,
+                'errfile'   => $exception->getFile(),
+                'errline'   => $exception->getLine(),
                 'request'   => print_r($request, true),
-                'session'   => print_r($session, true),
                 'model'     => print_r($model, true)
             )
         );
@@ -202,7 +199,7 @@ class LoggerBridge
     /**
      * Handles fatal errors
      */
-    public function fatalHandler($request, $session, $model)
+    public function fatalHandler($request, $model)
     {
         $error = error_get_last();
         if (
@@ -222,7 +219,6 @@ class LoggerBridge
                     'errfile' => $error['file'],
                     'errline' => $error['line'],
                     'request' => print_r($request, true),
-                    'session' => print_r($session, true),
                     'model'   => print_r($model, true)
                 )
             );
