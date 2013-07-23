@@ -81,7 +81,9 @@ class LoggerBridge implements RequestFilter
     {
         if (!$this->registered) {
             // If the developer wants to see errors in dev mode then don't let php display them
-            ini_set('display_errors', !$this->showErrors);
+            if (Director::isDev()) {
+                ini_set('display_errors', !$this->showErrors);
+            }
             $this->request = $request;
             $this->model = $model;
             $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
@@ -182,7 +184,6 @@ class LoggerBridge implements RequestFilter
 
         if (Director::isDev()) {
             if ($this->showErrors) {
-                ini_set('display_errors', 0);
                 Debug::showError(
                     E_USER_ERROR,
                     $message,
