@@ -29,7 +29,7 @@ class LoggerBridge implements RequestFilter
     /**
      * @var null|callable
      */
-    protected $exceptionHandler
+    protected $exceptionHandler;
     /**
      * @var SS_HTTPRequest
      */
