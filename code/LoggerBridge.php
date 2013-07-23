@@ -156,6 +156,9 @@ class LoggerBridge implements RequestFilter
             case E_WARNING:
             case E_CORE_WARNING:
             case E_USER_WARNING:
+                if (error_reporting() === 0) {
+                    return;
+                }
                 $errorType = 'warning';
                 break;
 
@@ -164,6 +167,9 @@ class LoggerBridge implements RequestFilter
             case E_DEPRECATED:
             case E_USER_DEPRECATED:
             case E_STRICT:
+                if (error_reporting() === 0) {
+                    return;
+                }
                 $errorType = 'notice';
                 break;
 
