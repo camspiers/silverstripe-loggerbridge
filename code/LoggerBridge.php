@@ -29,7 +29,7 @@ class LoggerBridge implements RequestFilter
     /**
      * @var null|callable
      */
-    protected $exceptionHandler;
+    protected $exceptionHandler
     /**
      * @var SS_HTTPRequest
      */
@@ -45,7 +45,7 @@ class LoggerBridge implements RequestFilter
     public function __construct(Psr\Log\LoggerInterface $logger, $showErrors = true)
     {
         $this->logger = $logger;
-        $this->showErrors = $showErrors;
+        $this->showErrors = (bool) $showErrors;
     }
     /**
      * @param \Psr\Log\LoggerInterface $logger
