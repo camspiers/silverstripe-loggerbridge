@@ -4,7 +4,8 @@
  * Enables global SilverStripe logging with a PSR-3 logger like Monolog.
  * 
  * The logger is attached in by using a RequestProcessor filter. This behaviour is required
- * so the logger is attached after the environment 
+ * so the logger is attached after the environment only and except rules in yml are applied.
+ * 
  * @author Cam Spiers <camspiers@gmail.com>
  */
 class LoggerBridge implements RequestFilter
@@ -47,6 +48,27 @@ class LoggerBridge implements RequestFilter
         $this->showErrors = $showErrors;
     }
     /**
+     * @param \Psr\Log\LoggerInterface $logger
+     */
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+    }
+    /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+    /**
+     * @return boolean
+     */
+    public function getRegistered()
+    {
+        return $this->registered;
+    }
+    /**
      * This hook function is executed from RequestProcessor before the request starts
      * @param SS_HTTPRequest $request
      * @param Session        $session
@@ -86,8 +108,11 @@ class LoggerBridge implements RequestFilter
             }
             $this->request = $request;
             $this->model = $model;
+            // Store the previous error handler if there was any
             $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
+            // Store the previous exception handler if there was any
             $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
+            // If the shutdown function hasn't been registered register it
             if ($this->registered === null) {
                 register_shutdown_function(array($this, 'fatalHandler'));
             }
@@ -102,7 +127,9 @@ class LoggerBridge implements RequestFilter
         if ($this->registered) {
             $this->request = null;
             $this->model = null;
+            // Restore the previous error handler
             set_error_handler($this->errorHandler);
+            // Restore the previous exception handler
             set_exception_handler($this->exceptionHandler);
             $this->registered = false;
         }
@@ -117,39 +144,19 @@ class LoggerBridge implements RequestFilter
      */
     public function errorHandler($errno, $errstr, $errfile, $errline)
     {
-        $context = array(
-            'errfile' => $errfile,
-            'errline' => $errline,
-            'request' => print_r($this->request, true),
-            'model'   => print_r($this->model, true)
-        );
+        $alwaysShowError = false;
         switch ($errno) {
             case E_ERROR:
             case E_CORE_ERROR:
             case E_USER_ERROR:
-                $this->logger->error(
-                    $errstr,
-                    $context
-                );
-                if (Director::isDev() || Director::is_cli()) {
-                    if ($this->showErrors) {
-                        Debug::showError($errno, $errstr, $errfile, $errline, false, 'Error');
-                    }
-                } else {
-                    Debug::friendlyError();
-                }
+                $errorType = 'error';
+                $alwaysShowError = true;
                 break;
 
             case E_WARNING:
             case E_CORE_WARNING:
             case E_USER_WARNING:
-                $this->logger->warning(
-                    $errstr,
-                    $context
-                );
-                if ($this->showErrors && Director::isDev()) {
-                    Debug::showError($errno, $errstr, $errfile, $errline, false, 'Warning');
-                }
+                $errorType = 'warning';
                 break;
 
             case E_NOTICE:
@@ -157,15 +164,22 @@ class LoggerBridge implements RequestFilter
             case E_DEPRECATED:
             case E_USER_DEPRECATED:
             case E_STRICT:
-                $this->logger->notice(
-                    $errstr,
-                    $context
-                );
-                if ($this->showErrors && Director::isDev()) {
-                    Debug::showError($errno, $errstr, $errfile, $errline, false, 'Notice');
-                }
+                $errorType = 'notice';
                 break;
+
+            default:
+                $errorType = 'error';
         }
+        $this->logger->$errorType(
+            $errstr,
+            array(
+                'errfile' => $errfile,
+                'errline' => $errline,
+                'request' => print_r($this->request, true),
+                'model'   => print_r($this->model, true)
+            )
+        );
+        $this->displayError($alwaysShowError, $errno, $errstr, $errfile, $errline, strtoupper($errorType));
     }
     /**
      * Handles uncaught exceptions
@@ -184,23 +198,18 @@ class LoggerBridge implements RequestFilter
             )
         );
 
-        if (Director::isDev()) {
-            if ($this->showErrors) {
-                Debug::showError(
-                    E_USER_ERROR,
-                    $message,
-                    $exception->getFile(),
-                    $exception->getLine(),
-                    false,
-                    'Error'
-                );
-            }
-        } else {
-            Debug::friendlyError();
-        }
+        $this->displayError(
+            true,
+            E_USER_ERROR,
+            $message,
+            $exception->getFile(),
+            $exception->getLine(),
+            'Error'
+        );
     }
     /**
      * Handles fatal errors
+     * If we are registered, and there is a fatal error then log and try to gracefully handle error output
      */
     public function fatalHandler()
     {
@@ -227,42 +236,40 @@ class LoggerBridge implements RequestFilter
                     'model'   => print_r($this->model, true)
                 )
             );
-
-            if (Director::isDev()) {
-                if ($this->showErrors) {
-                    Debug::showError(
-                        E_CORE_ERROR,
-                        $error['message'],
-                        $error['file'],
-                        $error['line'],
-                        false,
-                        'Fatal Error'
-                    );
-                }
-            } else {
-                Debug::friendlyError();
-            }
+            
+            $this->displayError(
+                true,
+                E_CORE_ERROR,
+                $error['message'],
+                $error['file'],
+                $error['line'],
+                'Fatal Error'
+            );
         }
     }
     /**
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param $always
+     * @param $errno
+     * @param $errstr
+     * @param $errfile
+     * @param $errline
+     * @param $errtype
      */
-    public function setLogger($logger)
+    protected function displayError($always, $errno, $errstr, $errfile, $errline, $errtype)
     {
-        $this->logger = $logger;
-    }
-    /**
-     * @return \Psr\Log\LoggerInterface
-     */
-    public function getLogger()
-    {
-        return $this->logger;
-    }
-    /**
-     * @return boolean
-     */
-    public function getRegistered()
-    {
-        return $this->registered;
+        if (Director::isDev()) {
+            if ($this->showErrors) {
+                Debug::showError(
+                    $errno,
+                    $errstr,
+                    $errfile,
+                    $errline,
+                    false,
+                    $errtype
+                );
+            }
+        } elseif($always) {
+            Debug::friendlyError();
+        }
     }
 }
