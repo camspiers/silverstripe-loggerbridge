@@ -80,6 +80,8 @@ class LoggerBridge implements RequestFilter
     public function registerGlobalHandlers(SS_HTTPRequest $request = null, DataModel $model = null)
     {
         if (!$this->registered) {
+            // If the developer wants to see errors in dev mode then don't let php display them
+            ini_set('display_errors', !$this->showErrors);
             $this->request = $request;
             $this->model = $model;
             $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
@@ -171,15 +173,16 @@ class LoggerBridge implements RequestFilter
         $this->logger->error(
             $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
             $context = array(
-                'errfile'   => $exception->getFile(),
-                'errline'   => $exception->getLine(),
-                'request'   => print_r($this->request, true),
-                'model'     => print_r($this->model, true)
+                'errfile' => $exception->getFile(),
+                'errline' => $exception->getLine(),
+                'request' => print_r($this->request, true),
+                'model'   => print_r($this->model, true)
             )
         );
 
         if (Director::isDev()) {
             if ($this->showErrors) {
+                ini_set('display_errors', 0);
                 Debug::showError(
                     E_USER_ERROR,
                     $message,
@@ -219,6 +222,21 @@ class LoggerBridge implements RequestFilter
                     'model'   => print_r($this->model, true)
                 )
             );
+
+            if (Director::isDev()) {
+                if ($this->showErrors) {
+                    Debug::showError(
+                        E_CORE_ERROR,
+                        $error['message'],
+                        $error['file'],
+                        $error['line'],
+                        false,
+                        'Fatal Error'
+                    );
+                }
+            } else {
+                Debug::friendlyError();
+            }
         }
     }
     /**
