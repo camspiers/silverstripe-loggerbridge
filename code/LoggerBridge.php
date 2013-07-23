@@ -14,9 +14,9 @@ class LoggerBridge implements RequestFilter
      */
     protected $logger;
     /**
-     * @var bool
+     * @var bool|null
      */
-    protected $registered = false;
+    protected $registered;
     /**
      * @var bool
      */
@@ -88,7 +88,9 @@ class LoggerBridge implements RequestFilter
             $this->model = $model;
             $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
             $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
-            register_shutdown_function(array($this, 'fatalHandler'));
+            if ($this->registered === null) {
+                register_shutdown_function(array($this, 'fatalHandler'));
+            }
             $this->registered = true;
         }
     }
@@ -204,6 +206,8 @@ class LoggerBridge implements RequestFilter
     {
         $error = error_get_last();
         if (
+            $this->registered
+            &&
             $error
             &&
             in_array(
