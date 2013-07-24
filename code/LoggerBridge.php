@@ -272,7 +272,7 @@ class LoggerBridge implements RequestFilter
                         $errstr,
                         $errfile,
                         $errline,
-                        strtoupper($logType)
+                        ucfirst($logType)
                     );
                 }
 
