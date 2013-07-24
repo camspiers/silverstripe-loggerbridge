@@ -27,6 +27,10 @@ class LoggerBridge implements RequestFilter
      */
     protected $showErrors = true;
     /**
+     * @var null|int
+     */
+    protected $reserveMemory;
+    /**
      * @var null|callable
      */
     protected $errorHandler;
@@ -73,11 +77,18 @@ class LoggerBridge implements RequestFilter
     /**
      * @param \Psr\Log\LoggerInterface $logger
      * @param bool                     $showErrors If false stops the display of SilverStripe errors
+     * @param null                     $reserveMemory The amount of memory to reserve for out of memory errors
      */
-    public function __construct(Psr\Log\LoggerInterface $logger, $showErrors = true)
-    {
+    public function __construct(
+        Psr\Log\LoggerInterface $logger,
+        $showErrors = true,
+        $reserveMemory = null
+    ) {
         $this->logger = $logger;
         $this->showErrors = (bool)$showErrors;
+        if ($reserveMemory !== null) {
+            $this->setReserveMemory($reserveMemory);
+        }
     }
     /**
      * @param \Psr\Log\LoggerInterface $logger
@@ -147,6 +158,20 @@ class LoggerBridge implements RequestFilter
         return $this->showErrors;
     }
     /**
+     * @param string $reserveMemory
+     */
+    public function setReserveMemory($reserveMemory)
+    {
+        $this->reserveMemory = translate_memstring($reserveMemory);
+    }
+    /**
+     * @return int|null
+     */
+    public function getReserveMemory()
+    {
+        return $this->reserveMemory;
+    }
+    /**
      * This hook function is executed from RequestProcessor before the request starts
      * @param  SS_HTTPRequest $request
      * @param  Session        $session
@@ -193,6 +218,9 @@ class LoggerBridge implements RequestFilter
             // If the shutdown function hasn't been registered register it
             if ($this->registered === null) {
                 register_shutdown_function(array($this, 'fatalHandler'));
+                if ($this->reserveMemory !== null) {
+                    $this->reserveMemory();
+                }
             }
             $this->registered = true;
         }
@@ -299,13 +327,15 @@ class LoggerBridge implements RequestFilter
                 )
             )
         ) {
+            if ($this->reserveMemory !== null) {
+                $this->restoreMemory();
+            }
+            
             $this->logger->critical(
                 $error['message'],
                 array(
                     'errfile' => $error['file'],
-                    'errline' => $error['line'],
-                    'request' => print_r($this->request, true),
-                    'model'   => print_r($this->model, true)
+                    'errline' => $error['line']
                 )
             );
 
@@ -319,5 +349,25 @@ class LoggerBridge implements RequestFilter
                 );
             }
         }
+    }
+    /**
+     * Sets the memory limit less by the reserveMemory amount
+     */
+    protected function reserveMemory()
+    {
+        ini_set(
+            'memory_limit',
+            translate_memstring(ini_get('memory_limit')) - $this->reserveMemory
+        );
+    }
+    /**
+     * Restores the original memory limit so fatal out of memory errors can be properly processed
+     */
+    protected function restoreMemory()
+    {
+        ini_set(
+            'memory_limit',
+            translate_memstring(ini_get('memory_limit')) + $this->reserveMemory
+        );
     }
 }

@@ -1,0 +1,6 @@
+Injector:
+  RequestProcessor:
+    class: RequestProcessor
+    properties:
+      filters:
+        - '%$LoggerBridge'
