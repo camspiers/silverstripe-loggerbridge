@@ -2,10 +2,10 @@
 
 /**
  * Enables global SilverStripe logging with a PSR-3 logger like Monolog.
- * 
+ *
  * The logger is attached in by using a RequestProcessor filter. This behaviour is required
  * so the logger is attached after the environment only and except rules in yml are applied.
- * 
+ *
  * @author Cam Spiers <camspiers@gmail.com>
  */
 class LoggerBridge implements RequestFilter
@@ -39,6 +39,34 @@ class LoggerBridge implements RequestFilter
      */
     protected $model;
     /**
+     * Defines the way error types are logged
+     * @var
+     */
+    protected $errorLogGroups = array(
+        'error'   => array(
+            E_ERROR,
+            E_CORE_ERROR,
+            E_USER_ERROR
+        ),
+        'warning' => array(
+            E_WARNING,
+            E_CORE_WARNING,
+            E_USER_WARNING
+        ),
+        'notice'  => array(
+            E_NOTICE,
+            E_USER_NOTICE,
+            E_DEPRECATED,
+            E_USER_DEPRECATED,
+            E_STRICT
+        )
+    );
+    /**
+     * Defines what log types always display an error
+     * @var array
+     */
+    protected $alwaysShowLogTypes = array('error');
+    /**
      * @param \Psr\Log\LoggerInterface $logger
      * @param bool                     $showErrors If false stops the display of SilverStripe errors
      */
@@ -69,10 +97,40 @@ class LoggerBridge implements RequestFilter
         return $this->registered;
     }
     /**
+     * @param array $errorLogGroups
+     */
+    public function setErrorLogGroups($errorLogGroups)
+    {
+        if (is_array($errorLogGroups)) {
+            $this->errorLogGroups = $errorLogGroups;
+        }
+    }
+    /**
+     * @return mixed
+     */
+    public function getErrorLogGroups()
+    {
+        return $this->errorLogGroups;
+    }
+    /**
+     * @param boolean $showErrors
+     */
+    public function setShowErrors($showErrors)
+    {
+        $this->showErrors = (bool) $showErrors;
+    }
+    /**
+     * @return boolean
+     */
+    public function getShowErrors()
+    {
+        return $this->showErrors;
+    }
+    /**
      * This hook function is executed from RequestProcessor before the request starts
-     * @param SS_HTTPRequest $request
-     * @param Session        $session
-     * @param DataModel      $model
+     * @param  SS_HTTPRequest $request
+     * @param  Session        $session
+     * @param  DataModel      $model
      * @return bool
      */
     public function preRequest(SS_HTTPRequest $request, Session $session, DataModel $model)
@@ -83,9 +141,9 @@ class LoggerBridge implements RequestFilter
     }
     /**
      * This hook function is executed from RequestProcessor after the request ends
-     * @param SS_HTTPRequest  $request
-     * @param SS_HTTPResponse $response
-     * @param DataModel       $model
+     * @param  SS_HTTPRequest  $request
+     * @param  SS_HTTPResponse $response
+     * @param  DataModel       $model
      * @return bool
      */
     public function postRequest(SS_HTTPRequest $request, SS_HTTPResponse $response, DataModel $model)
@@ -144,48 +202,32 @@ class LoggerBridge implements RequestFilter
      */
     public function errorHandler($errno, $errstr, $errfile, $errline)
     {
-        $alwaysShowError = false;
-        switch ($errno) {
-            case E_ERROR:
-            case E_CORE_ERROR:
-            case E_USER_ERROR:
-                $errorType = 'error';
-                $alwaysShowError = true;
-                break;
-
-            case E_WARNING:
-            case E_CORE_WARNING:
-            case E_USER_WARNING:
-                if (error_reporting() === 0) {
+        foreach ($this->errorLogGroups as $logType => $errorTypes) {
+            if (in_array($errno, $errorTypes)) {
+                $alwaysShowError = in_array($logType, $this->alwaysShowLogTypes);
+                if (!$alwaysShowError && error_reporting() === 0) {
                     return;
                 }
-                $errorType = 'warning';
+                $this->logger->$logType(
+                    $errstr,
+                    array(
+                        'errfile' => $errfile,
+                        'errline' => $errline,
+                        'request' => print_r($this->request, true),
+                        'model'   => print_r($this->model, true)
+                    )
+                );
+                $this->displayError(
+                    $alwaysShowError,
+                    $errno,
+                    $errstr,
+                    $errfile,
+                    $errline,
+                    strtoupper($logType)
+                );
                 break;
-
-            case E_NOTICE:
-            case E_USER_NOTICE:
-            case E_DEPRECATED:
-            case E_USER_DEPRECATED:
-            case E_STRICT:
-                if (error_reporting() === 0) {
-                    return;
-                }
-                $errorType = 'notice';
-                break;
-
-            default:
-                $errorType = 'error';
+            }
         }
-        $this->logger->$errorType(
-            $errstr,
-            array(
-                'errfile' => $errfile,
-                'errline' => $errline,
-                'request' => print_r($this->request, true),
-                'model'   => print_r($this->model, true)
-            )
-        );
-        $this->displayError($alwaysShowError, $errno, $errstr, $errfile, $errline, strtoupper($errorType));
     }
     /**
      * Handles uncaught exceptions
@@ -242,7 +284,7 @@ class LoggerBridge implements RequestFilter
                     'model'   => print_r($this->model, true)
                 )
             );
-            
+
             $this->displayError(
                 true,
                 E_CORE_ERROR,
@@ -254,14 +296,14 @@ class LoggerBridge implements RequestFilter
         }
     }
     /**
-     * @param $always
+     * @param $alwaysShowError
      * @param $errno
      * @param $errstr
      * @param $errfile
      * @param $errline
      * @param $errtype
      */
-    protected function displayError($always, $errno, $errstr, $errfile, $errline, $errtype)
+    protected function displayError($alwaysShowError, $errno, $errstr, $errfile, $errline, $errtype)
     {
         if (Director::isDev()) {
             if ($this->showErrors) {
@@ -274,7 +316,7 @@ class LoggerBridge implements RequestFilter
                     $errtype
                 );
             }
-        } elseif($always) {
+        } elseif ($alwaysShowError) {
             Debug::friendlyError();
         }
     }
