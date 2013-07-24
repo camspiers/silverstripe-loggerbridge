@@ -15,6 +15,10 @@ class LoggerBridge implements RequestFilter
      */
     protected $logger;
     /**
+     * @var ErrorReporter
+     */
+    protected $errorReporter;
+    /**
      * @var bool|null
      */
     protected $registered;
@@ -73,7 +77,7 @@ class LoggerBridge implements RequestFilter
     public function __construct(Psr\Log\LoggerInterface $logger, $showErrors = true)
     {
         $this->logger = $logger;
-        $this->showErrors = (bool) $showErrors;
+        $this->showErrors = (bool)$showErrors;
     }
     /**
      * @param \Psr\Log\LoggerInterface $logger
@@ -88,6 +92,22 @@ class LoggerBridge implements RequestFilter
     public function getLogger()
     {
         return $this->logger;
+    }
+    /**
+     * @param \ErrorReporter $errorReporter
+     */
+    public function setErrorReporter(ErrorReporter $errorReporter)
+    {
+        $this->errorReporter = $errorReporter;
+    }
+    /**
+     * @return \ErrorReporter
+     */
+    public function getErrorReporter()
+    {
+        $this->errorReporter = $this->errorReporter ? : new DebugErrorReporter();
+
+        return $this->errorReporter;
     }
     /**
      * @return boolean
@@ -117,7 +137,7 @@ class LoggerBridge implements RequestFilter
      */
     public function setShowErrors($showErrors)
     {
-        $this->showErrors = (bool) $showErrors;
+        $this->showErrors = (bool)$showErrors;
     }
     /**
      * @return boolean
@@ -161,7 +181,7 @@ class LoggerBridge implements RequestFilter
     {
         if (!$this->registered) {
             // If the developer wants to see errors in dev mode then don't let php display them
-            if (Director::isDev()) {
+            if (!Director::isLive()) {
                 ini_set('display_errors', !$this->showErrors);
             }
             $this->request = $request;
@@ -204,8 +224,8 @@ class LoggerBridge implements RequestFilter
     {
         foreach ($this->errorLogGroups as $logType => $errorTypes) {
             if (in_array($errno, $errorTypes)) {
-                $alwaysShowError = in_array($logType, $this->alwaysShowLogTypes);
-                if (!$alwaysShowError && error_reporting() === 0) {
+                $showError = in_array($logType, $this->alwaysShowLogTypes);
+                if (!$showError && error_reporting() === 0) {
                     return;
                 }
                 $this->logger->$logType(
@@ -217,21 +237,24 @@ class LoggerBridge implements RequestFilter
                         'model'   => print_r($this->model, true)
                     )
                 );
-                $this->displayError(
-                    $alwaysShowError,
-                    $errno,
-                    $errstr,
-                    $errfile,
-                    $errline,
-                    strtoupper($logType)
-                );
+
+                if ($showError || ($this->showErrors && !Director::isLive())) {
+                    $this->getErrorReporter()->reportError(
+                        $errno,
+                        $errstr,
+                        $errfile,
+                        $errline,
+                        strtoupper($logType)
+                    );
+                }
+
                 break;
             }
         }
     }
     /**
      * Handles uncaught exceptions
-     * @param  Exception   $exception
+     * @param  Exception $exception
      * @return string|void
      */
     public function exceptionHandler(Exception $exception)
@@ -246,14 +269,15 @@ class LoggerBridge implements RequestFilter
             )
         );
 
-        $this->displayError(
-            true,
-            E_USER_ERROR,
-            $message,
-            $exception->getFile(),
-            $exception->getLine(),
-            'Error'
-        );
+        if ($this->showErrors || Director::isLive()) {
+            $this->getErrorReporter()->reportError(
+                E_USER_ERROR,
+                $message,
+                $exception->getFile(),
+                $exception->getLine(),
+                'Error'
+            );
+        }
     }
     /**
      * Handles fatal errors
@@ -285,39 +309,15 @@ class LoggerBridge implements RequestFilter
                 )
             );
 
-            $this->displayError(
-                true,
-                E_CORE_ERROR,
-                $error['message'],
-                $error['file'],
-                $error['line'],
-                'Fatal Error'
-            );
-        }
-    }
-    /**
-     * @param $alwaysShowError
-     * @param $errno
-     * @param $errstr
-     * @param $errfile
-     * @param $errline
-     * @param $errtype
-     */
-    protected function displayError($alwaysShowError, $errno, $errstr, $errfile, $errline, $errtype)
-    {
-        if (Director::isDev()) {
-            if ($this->showErrors) {
-                Debug::showError(
-                    $errno,
-                    $errstr,
-                    $errfile,
-                    $errline,
-                    false,
-                    $errtype
+            if ($this->showErrors || Director::isLive()) {
+                $this->getErrorReporter()->reportError(
+                    E_CORE_ERROR,
+                    $error['message'],
+                    $error['file'],
+                    $error['line'],
+                    'Fatal Error'
                 );
             }
-        } elseif ($alwaysShowError) {
-            Debug::friendlyError();
         }
     }
 }
