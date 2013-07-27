@@ -1,5 +1,7 @@
 <?php
 
+namespace Camspiers\LoggerBridge\ErrorReporter;
+
 /**
  * Class ErrorReporter
  */

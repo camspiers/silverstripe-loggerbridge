@@ -1,5 +1,13 @@
 <?php
 
+namespace Camspiers\LoggerBridge;
+
+use Camspiers\LoggerBridge\EnvReporter\DirectorEnvReporter;
+use Camspiers\LoggerBridge\EnvReporter\EnvReporter;
+use Camspiers\LoggerBridge\ErrorReporter\DebugErrorReporter;
+use Camspiers\LoggerBridge\ErrorReporter\ErrorReporter;
+use Psr\Log\LoggerInterface;
+
 /**
  * Enables global SilverStripe logging with a PSR-3 logger like Monolog.
  *
@@ -8,44 +16,58 @@
  *
  * @author Cam Spiers <camspiers@gmail.com>
  */
-class LoggerBridge implements RequestFilter
+class LoggerBridge implements \RequestFilter
 {
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
+
     /**
-     * @var ErrorReporter
+     * @var \Camspiers\LoggerBridge\ErrorReporter\ErrorReporter
      */
     protected $errorReporter;
+
+    /**
+     * @var \Camspiers\LoggerBridge\EnvReporter\EnvReporter
+     */
+    protected $envReporter;
+
     /**
      * @var bool|null
      */
     protected $registered;
+
     /**
      * @var bool
      */
-    protected $showErrors = true;
+    protected $reportErrorsWhenNotLive = true;
+
     /**
      * @var null|int
      */
     protected $reserveMemory;
+
     /**
      * @var null|callable
      */
     protected $errorHandler;
+
     /**
      * @var null|callable
      */
     protected $exceptionHandler;
+
     /**
-     * @var SS_HTTPRequest
+     * @var \SS_HTTPRequest
      */
     protected $request;
+
     /**
-     * @var DataModel
+     * @var \DataModel
      */
     protected $model;
+
     /**
      * Defines the way error types are logged
      * @var
@@ -69,27 +91,24 @@ class LoggerBridge implements RequestFilter
             E_STRICT
         )
     );
-    /**
-     * Defines what log types always display an error
-     * @var array
-     */
-    protected $alwaysShowLogTypes = array('error');
+
     /**
      * @param \Psr\Log\LoggerInterface $logger
-     * @param bool                     $showErrors If false stops the display of SilverStripe errors
+     * @param bool                     $reportErrorsWhenNotLive    If false stops the display of SilverStripe errors
      * @param null                     $reserveMemory The amount of memory to reserve for out of memory errors
      */
     public function __construct(
-        Psr\Log\LoggerInterface $logger,
-        $showErrors = true,
+        LoggerInterface $logger,
+        $reportErrorsWhenNotLive = true,
         $reserveMemory = null
     ) {
         $this->logger = $logger;
-        $this->showErrors = (bool)$showErrors;
+        $this->reportErrorsWhenNotLive = (bool) $reportErrorsWhenNotLive;
         if ($reserveMemory !== null) {
             $this->setReserveMemory($reserveMemory);
         }
     }
+
     /**
      * @param \Psr\Log\LoggerInterface $logger
      */
@@ -97,6 +116,7 @@ class LoggerBridge implements RequestFilter
     {
         $this->logger = $logger;
     }
+
     /**
      * @return \Psr\Log\LoggerInterface
      */
@@ -104,15 +124,17 @@ class LoggerBridge implements RequestFilter
     {
         return $this->logger;
     }
+
     /**
-     * @param \ErrorReporter $errorReporter
+     * @param \Camspiers\LoggerBridge\ErrorReporter\ErrorReporter $errorReporter
      */
     public function setErrorReporter(ErrorReporter $errorReporter)
     {
         $this->errorReporter = $errorReporter;
     }
+
     /**
-     * @return \ErrorReporter
+     * @return \Camspiers\LoggerBridge\ErrorReporter\ErrorReporter
      */
     public function getErrorReporter()
     {
@@ -120,6 +142,25 @@ class LoggerBridge implements RequestFilter
 
         return $this->errorReporter;
     }
+
+    /**
+     * @param \Camspiers\LoggerBridge\EnvReporter\EnvReporter $envReporter
+     */
+    public function setEnvReporter(EnvReporter $envReporter)
+    {
+        $this->envReporter = $envReporter;
+    }
+
+    /**
+     * @return \Camspiers\LoggerBridge\EnvReporter\EnvReporter
+     */
+    public function getEnvReporter()
+    {
+        $this->envReporter = $this->envReporter ? : new DirectorEnvReporter();
+
+        return $this->envReporter;
+    }
+
     /**
      * @return boolean
      */
@@ -127,6 +168,7 @@ class LoggerBridge implements RequestFilter
     {
         return $this->registered;
     }
+
     /**
      * @param array $errorLogGroups
      */
@@ -136,6 +178,7 @@ class LoggerBridge implements RequestFilter
             $this->errorLogGroups = $errorLogGroups;
         }
     }
+
     /**
      * @return mixed
      */
@@ -143,27 +186,35 @@ class LoggerBridge implements RequestFilter
     {
         return $this->errorLogGroups;
     }
+
     /**
-     * @param boolean $showErrors
+     * @param boolean $reportErrorsWhenNotLive
      */
-    public function setShowErrors($showErrors)
+    public function setReportErrorsWhenNotLive($reportErrorsWhenNotLive)
     {
-        $this->showErrors = (bool)$showErrors;
+        $this->reportErrorsWhenNotLive = (bool) $reportErrorsWhenNotLive;
     }
+
     /**
      * @return boolean
      */
-    public function getShowErrors()
+    public function getReportErrorsWhenNotLive()
     {
-        return $this->showErrors;
+        return $this->reportErrorsWhenNotLive;
     }
+
     /**
-     * @param string $reserveMemory
+     * @param string|int $reserveMemory
      */
     public function setReserveMemory($reserveMemory)
     {
-        $this->reserveMemory = translate_memstring($reserveMemory);
+        if (is_string($reserveMemory)) {
+            $this->reserveMemory = self::translateMemoryLimit($reserveMemory);
+        } elseif (is_int($reserveMemory)) {
+            $this->reserveMemory = $reserveMemory;
+        }
     }
+
     /**
      * @return int|null
      */
@@ -171,53 +222,65 @@ class LoggerBridge implements RequestFilter
     {
         return $this->reserveMemory;
     }
+
     /**
      * This hook function is executed from RequestProcessor before the request starts
-     * @param  SS_HTTPRequest $request
-     * @param  Session        $session
-     * @param  DataModel      $model
+     * @param  \SS_HTTPRequest $request
+     * @param  \Session        $session
+     * @param  \DataModel      $model
      * @return bool
      */
-    public function preRequest(SS_HTTPRequest $request, Session $session, DataModel $model)
-    {
+    public function preRequest(
+        \SS_HTTPRequest $request,
+        \Session $session,
+        \DataModel $model
+    ) {
         $this->registerGlobalHandlers($request, $model);
 
         return true;
     }
+
     /**
      * This hook function is executed from RequestProcessor after the request ends
-     * @param  SS_HTTPRequest  $request
-     * @param  SS_HTTPResponse $response
-     * @param  DataModel       $model
+     * @param  \SS_HTTPRequest  $request
+     * @param  \SS_HTTPResponse $response
+     * @param  \DataModel       $model
      * @return bool
      */
-    public function postRequest(SS_HTTPRequest $request, SS_HTTPResponse $response, DataModel $model)
-    {
+    public function postRequest(
+        \SS_HTTPRequest $request,
+        \SS_HTTPResponse $response,
+        \DataModel $model
+    ) {
         $this->deregisterGlobalHandlers();
 
         return true;
     }
+
     /**
      * Registers global error handlers
-     * @param SS_HTTPRequest $request
-     * @param DataModel      $model
+     * @param \SS_HTTPRequest $request
+     * @param \DataModel      $model
      */
-    public function registerGlobalHandlers(SS_HTTPRequest $request = null, DataModel $model = null)
-    {
+    public function registerGlobalHandlers(
+        \SS_HTTPRequest $request = null,
+        \DataModel $model = null
+    ) {
         if (!$this->registered) {
             // If the developer wants to see errors in dev mode then don't let php display them
-            if (!Director::isLive()) {
-                ini_set('display_errors', !$this->showErrors);
+            if (!$this->getEnvReporter()->isLive()) {
+                ini_set('display_errors', !$this->reportErrorsWhenNotLive);
             }
+            // Store the request and model for use in reporting
             $this->request = $request;
             $this->model = $model;
             // Store the previous error handler if there was any
-            $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
+            $this->registerErrorHandler();
             // Store the previous exception handler if there was any
-            $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
+            $this->registerExceptionHandler();
             // If the shutdown function hasn't been registered register it
             if ($this->registered === null) {
-                register_shutdown_function(array($this, 'fatalHandler'));
+                $this->registerFatalErrorHandler();
                 if ($this->reserveMemory !== null) {
                     $this->reserveMemory();
                 }
@@ -225,6 +288,7 @@ class LoggerBridge implements RequestFilter
             $this->registered = true;
         }
     }
+
     /**
      * Removes handlers we have added, and restores others if possible
      */
@@ -233,15 +297,49 @@ class LoggerBridge implements RequestFilter
         if ($this->registered) {
             $this->request = null;
             $this->model = null;
-            // Restore the previous error handler
-            set_error_handler($this->errorHandler);
-            // Restore the previous exception handler
-            set_exception_handler($this->exceptionHandler);
+            // Restore the previous error handler if available
+            set_error_handler(
+                is_callable($this->errorHandler)
+                    ? $this->errorHandler
+                    : function () {}
+            );
+            // Restore the previous exception handler if available
+            set_exception_handler(
+                is_callable($this->exceptionHandler)
+                    ? $this->exceptionHandler
+                    : function () {}
+            );
             $this->registered = false;
         }
     }
+
+    /**
+     * Registers the error handler
+     */
+    protected function registerErrorHandler()
+    {
+        $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
+    }
+
+    /**
+     * Registers the exception handler
+     */
+    protected function registerExceptionHandler()
+    {
+        $this->exceptionHandler = set_exception_handler(array($this, 'exceptionHandler'));
+    }
+
+    /**
+     * Registers the fatal error handler
+     */
+    protected function registerFatalErrorHandler()
+    {
+        register_shutdown_function(array($this, 'fatalHandler'));
+    }
+
     /**
      * Handlers general errors, user, warn and notice
+     * But the handler honours the error_reporting set in the environment
      * @param $errno
      * @param $errstr
      * @param $errfile
@@ -250,12 +348,14 @@ class LoggerBridge implements RequestFilter
      */
     public function errorHandler($errno, $errstr, $errfile, $errline)
     {
+        // Honour error suppression through @
+        if (($errorReporting = error_reporting()) === 0) {
+            return;
+        }
+        
         foreach ($this->errorLogGroups as $logType => $errorTypes) {
             if (in_array($errno, $errorTypes)) {
-                $showError = in_array($logType, $this->alwaysShowLogTypes);
-                if (!$showError && error_reporting() === 0) {
-                    return;
-                }
+                // Log all errors regardless of type
                 $this->logger->$logType(
                     $errstr,
                     array(
@@ -266,7 +366,15 @@ class LoggerBridge implements RequestFilter
                     )
                 );
 
-                if ($showError || ($this->showErrors && !Director::isLive())) {
+                // Check the error_reporting level in comparison with the $errno (honouring the environment)
+                // and (secondly)
+                // As long as $reportErrorsWhenNotLive is on or the site is live
+                // then do the error reporting
+                if (
+                    ($errno & $errorReporting) === $errno
+                    &&
+                    ($this->reportErrorsWhenNotLive || $this->getEnvReporter()->isLive())
+                ) {
                     $this->getErrorReporter()->reportError(
                         $errno,
                         $errstr,
@@ -280,12 +388,13 @@ class LoggerBridge implements RequestFilter
             }
         }
     }
+
     /**
      * Handles uncaught exceptions
-     * @param  Exception $exception
+     * @param  \Exception  $exception
      * @return string|void
      */
-    public function exceptionHandler(Exception $exception)
+    public function exceptionHandler(\Exception $exception)
     {
         $this->logger->error(
             $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
@@ -297,7 +406,8 @@ class LoggerBridge implements RequestFilter
             )
         );
 
-        if ($this->showErrors || Director::isLive()) {
+        // Exceptions must be reported in general because they stop the regular display of the page
+        if ($this->reportErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
             $this->getErrorReporter()->reportError(
                 E_USER_ERROR,
                 $message,
@@ -307,30 +417,22 @@ class LoggerBridge implements RequestFilter
             );
         }
     }
+
     /**
      * Handles fatal errors
      * If we are registered, and there is a fatal error then log and try to gracefully handle error output
      */
     public function fatalHandler()
     {
-        $error = error_get_last();
         if (
-            $this->registered
+            $this->getRegistered()
             &&
-            $error
-            &&
-            in_array(
-                $error['type'],
-                array(
-                    E_ERROR,
-                    E_CORE_ERROR
-                )
-            )
+            $error = $this->getLastErrorFatal()
         ) {
             if ($this->reserveMemory !== null) {
                 $this->restoreMemory();
             }
-            
+
             $this->logger->critical(
                 $error['message'],
                 array(
@@ -338,8 +440,9 @@ class LoggerBridge implements RequestFilter
                     'errline' => $error['line']
                 )
             );
-
-            if ($this->showErrors || Director::isLive()) {
+            
+            // Fatal errors should be reported when live as they stop the display of regular output
+            if ($this->reportErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
                 $this->getErrorReporter()->reportError(
                     E_CORE_ERROR,
                     $error['message'],
@@ -351,23 +454,73 @@ class LoggerBridge implements RequestFilter
         }
     }
     /**
+     * @return bool
+     */
+    protected function getLastErrorFatal()
+    {
+        $error = error_get_last();
+        if (
+            $error
+            &&
+            in_array(
+                $error['type'],
+                array(
+                    E_ERROR,
+                    E_CORE_ERROR
+                )
+            )
+        ) {
+            return $error;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Sets the memory limit less by the reserveMemory amount
      */
     protected function reserveMemory()
     {
-        ini_set(
-            'memory_limit',
-            translate_memstring(ini_get('memory_limit')) - $this->reserveMemory
-        );
+        $this->changeMemoryLimit(-$this->reserveMemory);
     }
+
     /**
      * Restores the original memory limit so fatal out of memory errors can be properly processed
      */
     protected function restoreMemory()
     {
+        $this->changeMemoryLimit($this->reserveMemory);
+    }
+
+    /**
+     * Change memory_limit by specified amount
+     * @param $amount
+     */
+    protected function changeMemoryLimit($amount)
+    {
         ini_set(
             'memory_limit',
-            translate_memstring(ini_get('memory_limit')) + $this->reserveMemory
+            self::translateMemoryLimit(ini_get('memory_limit')) + $amount
         );
+    }
+
+    /**
+     * Translate the memory limit string to a int in bytes.
+     * Credit SilverStripe core/Core.php
+     * @param $memoryLimit
+     * @return float
+     */
+    protected static function translateMemoryLimit($memoryLimit)
+    {
+        switch (strtolower(substr($memoryLimit, -1))) {
+            case "k":
+                return round(substr($memoryLimit, 0, -1) * 1024);
+            case "m":
+                return round(substr($memoryLimit, 0, -1) * 1024 * 1024);
+            case "g":
+                return round(substr($memoryLimit, 0, -1) * 1024 * 1024 * 1024);
+            default:
+                return round($memoryLimit);
+        }
     }
 }

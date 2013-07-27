@@ -112,7 +112,7 @@ Injector:
 
 ## Unit testing
 
-    $ composer install --dev
+    $ composer install --dev --prefer-dist
     $ vendor/bin/phpunit
     
 ---
