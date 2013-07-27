@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>SilverStripe Logger Bridge by camspiers</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>SilverStripe Logger Bridge</h1>
+        <p>Provides a bridge between PSR-3 loggers (like Monolog) and SilverStripe</p>
+        <p class="view"><a href="https://github.com/camspiers/silverstripe-loggerbridge">View the Project on GitHub <small>camspiers/silverstripe-loggerbridge</small></a></p>
+        <ul>
+          <li><a href="https://github.com/camspiers/silverstripe-loggerbridge/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/camspiers/silverstripe-loggerbridge/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/camspiers/silverstripe-loggerbridge">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p><a href="https://travis-ci.org/camspiers/silverstripe-loggerbridge"><img src="https://travis-ci.org/camspiers/silverstripe-loggerbridge.png?branch=master" alt="Build Status"></a></p>
+
+<p>Provides easy usage of <code>PSR-3</code> loggers (like <a href="https://github.com/Seldaek/monolog">Monolog</a>) in SilverStripe.</p>
+
+<p>The API is currently experimental and as such is at major <a href="http://semver.org/">version</a> <code>0</code>.</p>
+
+<h2>
+<a name="installation-composer-required" class="anchor" href="#installation-composer-required"><span class="octicon octicon-link"></span></a>Installation (composer required)</h2>
+
+<pre><code>$ composer require camspiers/silverstripe-loggerbridge:dev-master
+</code></pre>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<ol>
+<li>Create a config file in your <code>mysite</code>, e.g. "mysite/_config/logging.yml"</li>
+<li>
+<p>Set up a <code>PSR-3</code> logger service and add to the <code>LoggerBridge</code> constructor</p>
+
+<pre><code>Injector:
+    Monolog:
+        class: Monolog\Logger
+        constructor:
+            0: App
+            1:
+                - '%$StreamHandler'
+    StreamHandler:
+        class: Monolog\Handler\StreamHandler
+        constructor:
+            0: '../../error.log'
+    LoggerBridge:
+        class: Camspiers\LoggerBridge\LoggerBridge
+        constructor:
+            0: '%$Monolog'
+</code></pre>
+</li>
+</ol><h2>
+<a name="advanced-setup" class="anchor" href="#advanced-setup"><span class="octicon octicon-link"></span></a>Advanced setup</h2>
+
+<p>This setup provides the following:</p>
+
+<ul>
+<li>Logging to a <a href="https://getsentry.com/welcome/">Sentry</a> server, through a raven client (<code>composer require raven/raven</code>)
+
+<ul>
+<li>Uses one Sentry project for <code>live</code> and one Sentry project for <code>test</code> and <code>dev</code>
+</li>
+</ul>
+</li>
+<li>Logging to a file for error levels <code>error</code> and above</li>
+<li>Logging to <a href="http://craig.is/writing/chrome-logger">Chrome Logger</a> when environment <code>dev</code>
+
+<ul>
+<li>Errors are displayed in the Chrome console instead of displaying in the webpage</li>
+</ul>
+</li>
+<li>Logging to <a href="http://www.firephp.org/">FirePHP</a> when environment <code>dev</code>
+
+<ul>
+<li>Errors are displayed in the Firebug console instead of displaying in the webpage</li>
+</ul>
+</li>
+<li>Logging of peak memory usage along with error</li>
+</ul><div class="highlight"><pre><span class="nn">---</span>
+<span class="l-Scalar-Plain">Except</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">environment</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">live</span>
+<span class="nn">---</span>
+<span class="l-Scalar-Plain">Injector</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">Raven</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Raven_Client</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://someraven.url/1</span>
+
+  <span class="l-Scalar-Plain">Monolog</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Logger</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">App</span>
+      <span class="l-Scalar-Plain">1</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$RavenHandler'</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$StreamHandler'</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$ChromePHPHandler'</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$FirePHPHandler'</span>
+      <span class="l-Scalar-Plain">2</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$MemoryPeakUsageProcessor'</span>
+
+<span class="nn">---</span>
+<span class="l-Scalar-Plain">Only</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">environment</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">live</span>
+<span class="nn">---</span>
+<span class="l-Scalar-Plain">Injector</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">Raven</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Raven_Client</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">http://someraven.url/1</span>
+  <span class="l-Scalar-Plain">Monolog</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Logger</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">App</span>
+      <span class="l-Scalar-Plain">1</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$RavenHandler'</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$StreamHandler'</span>
+      <span class="l-Scalar-Plain">2</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="s">'%$MemoryPeakUsageProcessor'</span>
+
+<span class="nn">---</span>
+<span class="l-Scalar-Plain">Name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">logging</span>
+<span class="nn">---</span>
+<span class="l-Scalar-Plain">Injector</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">LoggerBridge</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Camspiers\LoggerBridge\LoggerBridge</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="s">'%$Monolog'</span>
+      <span class="l-Scalar-Plain">1</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">false</span>
+  <span class="l-Scalar-Plain">RavenHandler</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Handler\RavenHandler</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="s">'%$Raven'</span>
+  <span class="l-Scalar-Plain">StreamHandler</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Handler\StreamHandler</span>
+    <span class="l-Scalar-Plain">constructor</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">0</span><span class="p-Indicator">:</span> <span class="s">'../../error.log'</span>
+      <span class="l-Scalar-Plain">1</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">400</span>
+  <span class="l-Scalar-Plain">ChromePHPHandler</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Handler\ChromePHPHandler</span>
+  <span class="l-Scalar-Plain">FirePHPHandler</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Handler\FirePHPHandler</span>
+  <span class="l-Scalar-Plain">MemoryPeakUsageProcessor</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">class</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Monolog\Processor\MemoryPeakUsageProcessor</span>
+</pre></div>
+
+<h2>
+<a name="unit-testing" class="anchor" href="#unit-testing"><span class="octicon octicon-link"></span></a>Unit testing</h2>
+
+<pre><code>$ composer install --dev --prefer-dist
+$ vendor/bin/phpunit
+</code></pre>
+
+<hr><h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>SilverStripe Logger Bridge is released under the <a href="http://camspiers.mit-license.org/">MIT license</a></p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/camspiers">camspiers</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
