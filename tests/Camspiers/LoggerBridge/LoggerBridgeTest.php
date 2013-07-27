@@ -879,4 +879,32 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             $bridge->preRequest($request, $this->getMockWithoutConstructor('Session'), $model)
         );
     }
+
+    public function testPostRequest()
+    {
+        $bridge = $this->getLoggerBridge(
+            array(
+                'deregisterGlobalHandlers'
+            )
+        );
+
+        $bridge->setEnvReporter(
+            $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter')
+        );
+
+        $bridge->setErrorReporter(
+            $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
+        );
+
+        $bridge->expects($this->once())
+            ->method('deregisterGlobalHandlers');
+
+        $this->assertTrue(
+            $bridge->postRequest(
+                $this->getMockWithoutConstructor('SS_HTTPRequest'),
+                $this->getMockWithoutConstructor('SS_HTTPResponse'),
+                $this->getMockWithoutConstructor('DataModel')
+            )
+        );
+    }
 }

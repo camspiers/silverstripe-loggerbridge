@@ -4,7 +4,7 @@ Provides easy usage of `PSR-3` loggers (like [Monolog](https://github.com/Seldae
 
 The API is currently experimental and as such is at major [version](http://semver.org/) `0`.
 
-## Installation (with composer)
+## Installation (composer required)
 
 	$ composer require camspiers/silverstripe-loggerbridge:dev-master
 
@@ -29,7 +29,7 @@ The API is currently experimental and as such is at major [version](http://semve
 				constructor:
 					0: '%$Monolog'
 
-# Advanced setup
+## Advanced setup
 
 This setup provides the following:
 
