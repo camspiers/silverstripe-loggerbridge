@@ -1,6 +1,6 @@
 Injector:
   LoggerBridge:
-    class: 'Camspiers\\LoggerBridge\\LoggerBridge'
+    class: 'Camspiers\LoggerBridge\LoggerBridge'
   RequestProcessor:
     class: RequestProcessor
     properties:
