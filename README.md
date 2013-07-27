@@ -1,4 +1,4 @@
-# SilverStripe Logger Bridge
+# SilverStripe Logger Bridge [![Build Status](https://travis-ci.org/camspiers/silverstripe-loggerbridge.png?branch=master)](https://travis-ci.org/camspiers/silverstripe-loggerbridge)
 
 Provides easy usage of `PSR-3` loggers (like [Monolog](https://github.com/Seldaek/monolog)) in SilverStripe.
 
