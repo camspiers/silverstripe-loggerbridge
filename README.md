@@ -25,7 +25,7 @@ The API is currently experimental and as such is at major [version](http://semve
 				constructor:
 					0: '../../error.log'
 			LoggerBridge:
-				class: LoggerBridge
+				class: Camspiers\LoggerBridge\LoggerBridge
 				constructor:
 					0: '%$Monolog'
 
@@ -89,7 +89,7 @@ Name: logging
 ---
 Injector:
   LoggerBridge:
-    class: LoggerBridge
+    class: Camspiers\LoggerBridge\LoggerBridge
     constructor:
       0: '%$Monolog'
       1: false
