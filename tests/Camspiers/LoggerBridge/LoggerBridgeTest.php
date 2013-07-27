@@ -15,6 +15,13 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         error_reporting(E_ALL);
     }
     /**
+     * 
+     */
+    public function tearDown()
+    {
+        ini_set('display_errors', true);
+    }
+    /**
      * Helper method to return a stub of a logger interface
      * @return \Psr\Log\LoggerInterface
      */
@@ -55,6 +62,21 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         }
 
         return $bridge;
+    }
+    /**
+     * A helper method to get a mock that doesn't call its constructor
+     * @param $class
+     * @return \PHPUnit_Framework_MockObject_MockObject
+     */
+    protected function getMockWithoutConstructor($class)
+    {
+        return $this->getMock(
+            $class,
+            array(),
+            array(),
+            '',
+            false
+        );
     }
     /**
      * Test that there the default error reporter returns correctly
@@ -734,8 +756,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 'getRegistered',
                 'getLastErrorFatal',
                 'restoreMemory'
-            ),
-            $logger = $this->getLoggerStub()
+            )
         );
         
         $bridge->setReserveMemory('2M');
@@ -768,5 +789,94 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('restoreMemory');
 
         $bridge->fatalHandler();
+    }
+    
+    public function testExceptionHandler()
+    {
+        $bridge = $this->getLoggerBridge(
+            null,
+            $logger = $this->getLoggerStub()
+        );
+
+        $bridge->setEnvReporter(
+            $env = $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter')
+        );
+
+        $env->expects($this->never())
+            ->method('isLive');
+
+        $bridge->setErrorReporter(
+            $reporter = $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
+        );
+
+        $reporter->expects($this->once())
+            ->method('reportError');
+        
+        $exception = new \Exception('Message');
+        
+        $logger->expects($this->once())
+            ->method('error')
+            ->with(
+                'Uncaught Exception: Message',
+                array(
+                    'errfile' => $exception->getFile(),
+                    'errline' => $exception->getLine(),
+                    'request' => '',
+                    'model'   => ''
+                )
+            );
+
+        $bridge->exceptionHandler($exception);
+    }
+
+    public function testExceptionHandlerNoReport()
+    {
+        $bridge = $this->getLoggerBridge(
+            null,
+            null,
+            false
+        );
+
+        $bridge->setEnvReporter(
+            $env = $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter')
+        );
+
+        $env->expects($this->once())
+            ->method('isLive')
+            ->will($this->returnValue(false));
+
+        $bridge->setErrorReporter(
+            $reporter = $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
+        );
+
+        $reporter->expects($this->never())
+            ->method('reportError');
+
+        $bridge->exceptionHandler(new \Exception('Message'));
+    }
+    
+    public function testPreRequest()
+    {
+        $bridge = $this->getLoggerBridge(
+            array(
+                'registerGlobalHandlers'
+            )
+        );
+
+        $bridge->setEnvReporter(
+            $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter')
+        );
+
+        $bridge->setErrorReporter(
+            $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
+        );
+        
+        $bridge->expects($this->once())
+            ->method('registerGlobalHandlers')
+            ->with($request = $this->getMockWithoutConstructor('SS_HTTPRequest'), $model = $this->getMockWithoutConstructor('DataModel'));
+        
+        $this->assertTrue(
+            $bridge->preRequest($request, $this->getMockWithoutConstructor('Session'), $model)
+        );
     }
 }

@@ -2,6 +2,9 @@
 
 namespace Camspiers\LoggerBridge\ErrorReporter;
 
+use Debug;
+use Director;
+
 /**
  * Class DebugErrorReporter
  */
