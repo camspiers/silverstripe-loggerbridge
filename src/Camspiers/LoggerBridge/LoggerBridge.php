@@ -69,6 +69,11 @@ class LoggerBridge implements \RequestFilter
     protected $model;
 
     /**
+     * @var int
+     */
+    protected $backtraceLimit = 0;
+
+    /**
      * Defines the way error types are logged
      * @var
      */
@@ -94,8 +99,8 @@ class LoggerBridge implements \RequestFilter
 
     /**
      * @param \Psr\Log\LoggerInterface $logger
-     * @param bool                     $reportErrorsWhenNotLive    If false stops the display of SilverStripe errors
-     * @param null                     $reserveMemory The amount of memory to reserve for out of memory errors
+     * @param bool                     $reportErrorsWhenNotLive If false stops the display of SilverStripe errors
+     * @param null                     $reserveMemory           The amount of memory to reserve for out of memory errors
      */
     public function __construct(
         LoggerInterface $logger,
@@ -201,6 +206,22 @@ class LoggerBridge implements \RequestFilter
     public function getReportErrorsWhenNotLive()
     {
         return $this->reportErrorsWhenNotLive;
+    }
+
+    /**
+     * @param int $backtraceLimit
+     */
+    public function setBacktraceLimit($backtraceLimit)
+    {
+        $this->backtraceLimit = $backtraceLimit;
+    }
+
+    /**
+     * @return int
+     */
+    public function getBacktraceLimit()
+    {
+        return $this->backtraceLimit;
     }
 
     /**
@@ -352,17 +373,18 @@ class LoggerBridge implements \RequestFilter
         if (($errorReporting = error_reporting()) === 0) {
             return;
         }
-        
+
         foreach ($this->errorLogGroups as $logType => $errorTypes) {
             if (in_array($errno, $errorTypes)) {
                 // Log all errors regardless of type
                 $this->logger->$logType(
                     $errstr,
                     array(
-                        'errfile' => $errfile,
-                        'errline' => $errline,
-                        'request' => print_r($this->request, true),
-                        'model'   => print_r($this->model, true)
+                        'errfile'   => $errfile,
+                        'errline'   => $errline,
+                        'request'   => $this->formatArray($this->request),
+                        'model'     => $this->formatArray($this->model),
+                        'backtrace' => $this->formatArray($this->getBacktrace())
                     )
                 );
 
@@ -398,11 +420,12 @@ class LoggerBridge implements \RequestFilter
     {
         $this->logger->error(
             $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
-            $context = array(
-                'errfile' => $exception->getFile(),
-                'errline' => $exception->getLine(),
-                'request' => print_r($this->request, true),
-                'model'   => print_r($this->model, true)
+            array(
+                'errfile'   => $exception->getFile(),
+                'errline'   => $exception->getLine(),
+                'request'   => $this->formatArray($this->request),
+                'model'     => $this->formatArray($this->model),
+                'backtrace' => $this->formatArray($this->getBacktrace())
             )
         );
 
@@ -436,11 +459,12 @@ class LoggerBridge implements \RequestFilter
             $this->logger->critical(
                 $error['message'],
                 array(
-                    'errfile' => $error['file'],
-                    'errline' => $error['line']
+                    'errfile'   => $error['file'],
+                    'errline'   => $error['line'],
+                    'backtrace' => $this->formatArray($this->getBacktrace())
                 )
             );
-            
+
             // Fatal errors should be reported when live as they stop the display of regular output
             if ($this->reportErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
                 $this->getErrorReporter()->reportError(
@@ -454,7 +478,7 @@ class LoggerBridge implements \RequestFilter
         }
     }
     /**
-     * @return bool
+     * @return array|bool
      */
     protected function getLastErrorFatal()
     {
@@ -494,7 +518,7 @@ class LoggerBridge implements \RequestFilter
 
     /**
      * Change memory_limit by specified amount
-     * @param $amount
+     * @param int $amount
      */
     protected function changeMemoryLimit($amount)
     {
@@ -522,5 +546,26 @@ class LoggerBridge implements \RequestFilter
             default:
                 return round($memoryLimit);
         }
+    }
+
+    /**
+     * @return array
+     */
+    protected function getBacktrace()
+    {
+        if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
+            return debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $this->backtraceLimit);
+        } else {
+            return debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+    }
+
+    /**
+     * @param $arr
+     * @return mixed
+     */
+    protected function formatArray($arr)
+    {
+        return print_r($arr, true);
     }
 }

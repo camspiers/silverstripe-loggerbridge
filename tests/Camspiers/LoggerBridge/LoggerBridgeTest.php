@@ -15,7 +15,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         error_reporting(E_ALL);
     }
     /**
-     * 
+     *
      */
     public function tearDown()
     {
@@ -275,11 +275,10 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('error')
             ->with(
                 $errstr = 'error string',
-                array(
-                    'errfile' => $errfile = 'somefile',
-                    'errline' => $errline = 'someline',
-                    'request' => '',
-                    'model'   => ''
+                $this->logicalAnd(
+                    $this->contains($errfile = 'somefile'),
+                    $this->contains($errline = 'someline'),
+                    $this->contains('')
                 )
             );
 
@@ -320,11 +319,10 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('notice')
             ->with(
                 $errstr = 'error string',
-                array(
-                    'errfile' => $errfile = 'somefile',
-                    'errline' => $errline = 'someline',
-                    'request' => '',
-                    'model'   => ''
+                $this->logicalAnd(
+                    $this->contains($errfile = 'somefile'),
+                    $this->contains($errline = 'someline'),
+                    $this->contains('')
                 )
             );
 
@@ -365,11 +363,10 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('warning')
             ->with(
                 $errstr = 'error string',
-                array(
-                    'errfile' => $errfile = 'somefile',
-                    'errline' => $errline = 'someline',
-                    'request' => '',
-                    'model'   => ''
+                $this->logicalAnd(
+                    $this->contains($errfile = 'somefile'),
+                    $this->contains($errline = 'someline'),
+                    $this->contains('')
                 )
             );
 
@@ -403,7 +400,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge->setErrorReporter(
             $reporter = $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
         );
-        
+
         // We expect the report to never happen because the environment reporting is
         // E_ALL & ~E_USER_WARNING
         $reporter->expects($this->never())
@@ -413,11 +410,10 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('warning')
             ->with(
                 $errstr = 'error string',
-                array(
-                    'errfile' => $errfile = 'somefile',
-                    'errline' => $errline = 'someline',
-                    'request' => '',
-                    'model'   => ''
+                $this->logicalAnd(
+                    $this->contains($errfile = 'somefile'),
+                    $this->contains($errline = 'someline'),
+                    $this->contains('')
                 )
             );
 
@@ -499,7 +495,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ''
         );
     }
-    
+
     public function testFatalErrorHandlerNotRegistered()
     {
         $bridge = $this->getLoggerBridge(
@@ -622,9 +618,9 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('critical')
             ->with(
                 'Test',
-                array(
-                    'errfile' => 'file',
-                    'errline' => 'line'
+                $this->logicalAnd(
+                    $this->contains('file'),
+                    $this->contains('line')
                 )
             );
 
@@ -680,9 +676,9 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('critical')
             ->with(
                 'Test',
-                array(
-                    'errfile' => 'file',
-                    'errline' => 'line'
+                $this->logicalAnd(
+                    $this->contains('file'),
+                    $this->contains('line')
                 )
             );
 
@@ -731,15 +727,12 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 )
             );
 
-        // We expect the log to never happen
+        // We expect the log to happen once
         $logger->expects($this->once())
             ->method('critical')
             ->with(
                 'Test',
-                array(
-                    'errfile' => 'file',
-                    'errline' => 'line'
-                )
+                $this->logicalAnd($this->contains('file'), $this->contains('line'))
             );
 
         // We expect the report to never happen
@@ -758,7 +751,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 'restoreMemory'
             )
         );
-        
+
         $bridge->setReserveMemory('2M');
 
         $bridge->setEnvReporter(
@@ -784,13 +777,13 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                     )
                 )
             );
-        
+
         $bridge->expects($this->once())
             ->method('restoreMemory');
 
         $bridge->fatalHandler();
     }
-    
+
     public function testExceptionHandler()
     {
         $bridge = $this->getLoggerBridge(
@@ -811,18 +804,17 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
 
         $reporter->expects($this->once())
             ->method('reportError');
-        
+
         $exception = new \Exception('Message');
-        
+
         $logger->expects($this->once())
             ->method('error')
             ->with(
                 'Uncaught Exception: Message',
-                array(
-                    'errfile' => $exception->getFile(),
-                    'errline' => $exception->getLine(),
-                    'request' => '',
-                    'model'   => ''
+                $this->logicalAnd(
+                    $this->contains($exception->getFile()),
+                    $this->contains($exception->getLine()),
+                    $this->contains('')
                 )
             );
 
@@ -854,7 +846,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
 
         $bridge->exceptionHandler(new \Exception('Message'));
     }
-    
+
     public function testPreRequest()
     {
         $bridge = $this->getLoggerBridge(
@@ -870,11 +862,11 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge->setErrorReporter(
             $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
         );
-        
+
         $bridge->expects($this->once())
             ->method('registerGlobalHandlers')
             ->with($request = $this->getMockWithoutConstructor('SS_HTTPRequest'), $model = $this->getMockWithoutConstructor('DataModel'));
-        
+
         $this->assertTrue(
             $bridge->preRequest($request, $this->getMockWithoutConstructor('Session'), $model)
         );
