@@ -474,6 +474,7 @@ class LoggerBridge implements \RequestFilter
     /**
      * Handles fatal errors
      * If we are registered, and there is a fatal error then log and try to gracefully handle error output
+     * In cases where memory is exhausted increase the memory_limit to allow for logging
      */
     public function fatalHandler()
     {
@@ -535,6 +536,7 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
+     * Get a backtrace. Allowing for limiting when in 5.4
      * @return array
      */
     protected function getBacktrace()
@@ -547,6 +549,7 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
+     * Formats objects and array for logging
      * @param $arr
      * @return mixed
      */
@@ -628,6 +631,7 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
+     * Returns how close the max memory limit is to the current memory limit
      * @return int
      */
     protected function getSuhosinMemoryDifference()
