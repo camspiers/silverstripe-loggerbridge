@@ -343,7 +343,7 @@ class LoggerBridge implements \RequestFilter
      */
     protected function registerErrorHandler()
     {
-        $this->errorHandler = set_error_handler(array($this, 'errorHandler'));
+        $this->errorHandler = set_error_handler(array($this, 'errorHandler'), error_reporting());
     }
 
     /**
@@ -363,8 +363,7 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
-     * Handlers general errors, user, warn and notice
-     * But the handler honours the error_reporting set in the environment
+     * Handles general errors, user, warn and notice
      * @param $errno
      * @param $errstr
      * @param $errfile
@@ -392,12 +391,10 @@ class LoggerBridge implements \RequestFilter
                     )
                 );
 
-                // Check the error_reporting level in comparison with the $errno (honouring the environment)
-                // and (secondly)
                 // As long as $reportErrorsWhenNotLive is on or the site is live
                 // then do the error reporting
                 if (
-                    ($errno & $errorReporting) === $errno
+                    $logType === 'error'
                     &&
                     ($this->reportErrorsWhenNotLive || $this->getEnvReporter()->isLive())
                 ) {
