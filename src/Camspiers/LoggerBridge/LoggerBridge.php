@@ -257,7 +257,7 @@ class LoggerBridge implements \RequestFilter
     public function setReserveMemory($reserveMemory)
     {
         if (is_string($reserveMemory)) {
-            $this->reserveMemory = self::translateMemoryLimit($reserveMemory);
+            $this->reserveMemory = $this->translateMemoryLimit($reserveMemory);
         } elseif (is_int($reserveMemory)) {
             $this->reserveMemory = $reserveMemory;
         }
@@ -588,7 +588,7 @@ class LoggerBridge implements \RequestFilter
      * @param $memoryLimit
      * @return int
      */
-    protected static function translateMemoryLimit($memoryLimit)
+    protected function translateMemoryLimit($memoryLimit)
     {
         $unit = strtolower(substr($memoryLimit, -1, 1));
         $memoryLimit = (int) $memoryLimit;
