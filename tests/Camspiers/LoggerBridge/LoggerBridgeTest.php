@@ -316,9 +316,6 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             $reporter = $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
         );
 
-        $reporter->expects($this->once())
-            ->method('reportError');
-
         $logger->expects($this->once())
             ->method('notice')
             ->with(
@@ -359,9 +356,6 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge->setErrorReporter(
             $reporter = $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
         );
-
-        $reporter->expects($this->once())
-            ->method('reportError');
 
         $logger->expects($this->once())
             ->method('warning')
@@ -490,10 +484,10 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->method('reportError');
 
         $logger->expects($this->once())
-            ->method('warning');
+            ->method('error');
 
         $bridge->errorHandler(
-            E_USER_WARNING,
+            E_USER_ERROR,
             '',
             '',
             ''
