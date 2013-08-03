@@ -44,9 +44,9 @@ class LoggerBridge implements \RequestFilter
     protected $reportErrorsWhenNotLive = true;
 
     /**
-     * @var null|int
+     * @var int
      */
-    protected $reserveMemory;
+    protected $reserveMemory = 5242880; // 5M
 
     /**
      * @var null|callable
@@ -209,6 +209,7 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
+     * Only applies in 5.4
      * @param int $backtraceLimit
      */
     public function setBacktraceLimit($backtraceLimit)
@@ -302,8 +303,11 @@ class LoggerBridge implements \RequestFilter
             // If the shutdown function hasn't been registered register it
             if ($this->registered === null) {
                 $this->registerFatalErrorHandler();
-                if ($this->reserveMemory !== null) {
-                    $this->reserveMemory();
+                
+                // If suhosin is relevant then decrease the memory_limit by the reserveMemory amount
+                // otherwise we should be able to increase the memory by our reserveMemory amount without worry
+                if ($this->isSuhosinRelevant()) {
+                    $this->ensureSuhosinMemory();
                 }
             }
             $this->registered = true;
@@ -382,9 +386,9 @@ class LoggerBridge implements \RequestFilter
                     array(
                         'errfile'   => $errfile,
                         'errline'   => $errline,
-                        'request'   => $this->formatArray($this->request),
-                        'model'     => $this->formatArray($this->model),
-                        'backtrace' => $this->formatArray($this->getBacktrace())
+                        'request'   => $this->format($this->request),
+                        'model'     => $this->format($this->model),
+                        'backtrace' => $this->format($this->getBacktrace())
                     )
                 );
 
@@ -423,9 +427,9 @@ class LoggerBridge implements \RequestFilter
             array(
                 'errfile'   => $exception->getFile(),
                 'errline'   => $exception->getLine(),
-                'request'   => $this->formatArray($this->request),
-                'model'     => $this->formatArray($this->model),
-                'backtrace' => $this->formatArray($this->getBacktrace())
+                'request'   => $this->format($this->request),
+                'model'     => $this->format($this->model),
+                'backtrace' => $this->format($this->getBacktrace())
             )
         );
 
@@ -452,8 +456,10 @@ class LoggerBridge implements \RequestFilter
             &&
             $error = $this->getLastErrorFatal()
         ) {
-            if ($this->reserveMemory !== null) {
-                $this->restoreMemory();
+            if ($this->isMemoryExhaustedError($error)) {
+                // We can safely change the memory limit be the reserve amount because if suhosin is relevant
+                // the memory will have been decreased prior to exhaustion
+                $this->changeMemoryLimit($this->reserveMemory);
             }
 
             $this->logger->critical(
@@ -461,7 +467,7 @@ class LoggerBridge implements \RequestFilter
                 array(
                     'errfile'   => $error['file'],
                     'errline'   => $error['line'],
-                    'backtrace' => $this->formatArray($this->getBacktrace())
+                    'backtrace' => $this->format($this->getBacktrace())
                 )
             );
 
@@ -477,7 +483,9 @@ class LoggerBridge implements \RequestFilter
             }
         }
     }
+
     /**
+     * Returns whether or not the last error was fatal, if it was then return the error
      * @return array|bool
      */
     protected function getLastErrorFatal()
@@ -501,54 +509,6 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
-     * Sets the memory limit less by the reserveMemory amount
-     */
-    protected function reserveMemory()
-    {
-        $this->changeMemoryLimit(-$this->reserveMemory);
-    }
-
-    /**
-     * Restores the original memory limit so fatal out of memory errors can be properly processed
-     */
-    protected function restoreMemory()
-    {
-        $this->changeMemoryLimit($this->reserveMemory);
-    }
-
-    /**
-     * Change memory_limit by specified amount
-     * @param int $amount
-     */
-    protected function changeMemoryLimit($amount)
-    {
-        ini_set(
-            'memory_limit',
-            self::translateMemoryLimit(ini_get('memory_limit')) + $amount
-        );
-    }
-
-    /**
-     * Translate the memory limit string to a int in bytes.
-     * Credit SilverStripe core/Core.php
-     * @param $memoryLimit
-     * @return float
-     */
-    protected static function translateMemoryLimit($memoryLimit)
-    {
-        switch (strtolower(substr($memoryLimit, -1))) {
-            case "k":
-                return round(substr($memoryLimit, 0, -1) * 1024);
-            case "m":
-                return round(substr($memoryLimit, 0, -1) * 1024 * 1024);
-            case "g":
-                return round(substr($memoryLimit, 0, -1) * 1024 * 1024 * 1024);
-            default:
-                return round($memoryLimit);
-        }
-    }
-
-    /**
      * @return array
      */
     protected function getBacktrace()
@@ -564,8 +524,99 @@ class LoggerBridge implements \RequestFilter
      * @param $arr
      * @return mixed
      */
-    protected function formatArray($arr)
+    protected function format($arr)
     {
         return print_r($arr, true);
+    }
+
+    /**
+     * Returns whether or not the passed in error is a memory exhausted error
+     * @param $error array
+     * @return bool
+     */
+    protected function isMemoryExhaustedError($error)
+    {
+        return
+            isset($error['message'])
+            && stripos($error['message'], 'memory') !== false
+            && stripos($error['message'], 'exhausted') !== false;
+    }
+
+    /**
+     * Change memory_limit by specified amount
+     * @param $amount
+     */
+    protected function changeMemoryLimit($amount)
+    {
+        ini_set(
+            'memory_limit',
+            $this->getMemoryLimit() + $amount
+        );
+    }
+
+    /**
+     * Translate the memory limit string to a int in bytes.
+     * @param $memoryLimit
+     * @return int
+     */
+    protected static function translateMemoryLimit($memoryLimit)
+    {
+        $unit = strtolower(substr($memoryLimit, -1, 1));
+        $memoryLimit = (int) $memoryLimit;
+        switch($unit) {
+            case 'g':
+                $memoryLimit *= 1024;
+            case 'm':
+                $memoryLimit *= 1024;
+            case 'k':
+                $memoryLimit *= 1024;
+        }
+        return $memoryLimit;
+    }
+
+    /**
+     * @return int
+     */
+    protected function getMemoryLimit()
+    {
+        return $this->translateMemoryLimit(ini_get('memory_limit'));
+    }
+
+    /**
+     * @return int
+     */
+    protected function getSuhosinMemoryLimit()
+    {
+        return $this->translateMemoryLimit(ini_get('suhosin.memory_limit'));
+    }
+    
+    /**
+     * Checks if suhosin is enabled and the memory_limit is closer to suhosin.memory_limit than reserveMemory
+     * It is in this case where it is relevant to decrease the memory available to the script before it uses all
+     * available memory so when we need to increase the memory limit we can do so
+     * @return bool
+     */
+    protected function isSuhosinRelevant()
+    {
+        return extension_loaded('suhosin') && $this->getSuhosinMemoryDifference() < $this->reserveMemory;
+    }
+
+    /**
+     * @return int
+     */
+    protected function getSuhosinMemoryDifference()
+    {
+        return $this->getSuhosinMemoryLimit() - $this->getMemoryLimit();
+    }
+    
+    /**
+     * Set the memory_limit so we have enough to handle errors when suhosin is relevant
+     */
+    protected function ensureSuhosinMemory()
+    {
+        ini_set(
+            'memory_limit',
+            $this->getSuhosinMemoryLimit() - $this->reserveMemory
+        );
     }
 }

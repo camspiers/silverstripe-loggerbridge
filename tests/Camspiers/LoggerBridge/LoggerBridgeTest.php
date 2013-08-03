@@ -227,21 +227,25 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     /**
      * Test that memory is reserved
      */
-    public function testRegisterGlobalHandlersMemoryReserved()
+    public function testRegisterGlobalHandlersIsSuhosinRelevant()
     {
         $env = $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter', array('isLive'));
+        
         $bridge = $this->getLoggerBridge(
             array(
-                'reserveMemory'
-            ),
-            null,
-            true,
-            '2M'
+                'isSuhosinRelevant',
+                'ensureSuhosinMemory'
+            )
         );
-        $bridge->setEnvReporter($env);
+
+        $bridge->expects($this->any())
+            ->method('isSuhosinRelevant')
+            ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
-            ->method('reserveMemory');
+            ->method('ensureSuhosinMemory');
+        
+        $bridge->setEnvReporter($env);
 
         $bridge->registerGlobalHandlers();
     }
@@ -748,11 +752,9 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             array(
                 'getRegistered',
                 'getLastErrorFatal',
-                'restoreMemory'
+                'changeMemoryLimit'
             )
         );
-
-        $bridge->setReserveMemory('2M');
 
         $bridge->setEnvReporter(
             $env = $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter')
@@ -771,7 +773,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will(
                 $this->returnValue(
                     array(
-                        'message' => 'Test',
+                        'message' => 'memory exhausted',
                         'file'    => 'file',
                         'line'    => 'line'
                     )
@@ -779,7 +781,8 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             );
 
         $bridge->expects($this->once())
-            ->method('restoreMemory');
+            ->method('changeMemoryLimit')
+            ->with($bridge->getReserveMemory());
 
         $bridge->fatalHandler();
     }
