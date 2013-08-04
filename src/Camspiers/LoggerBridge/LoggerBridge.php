@@ -91,9 +91,7 @@ class LoggerBridge implements \RequestFilter
         'warning' => array(
             E_WARNING,
             E_CORE_WARNING,
-            E_USER_WARNING
-        ),
-        'notice'  => array(
+            E_USER_WARNING,
             E_NOTICE,
             E_USER_NOTICE,
             E_DEPRECATED,
