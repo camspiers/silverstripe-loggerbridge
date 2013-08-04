@@ -432,7 +432,8 @@ class LoggerBridge implements \RequestFilter
                             ucfirst($logType)
                         );
                     }
-                    exit;
+                    
+                    $this->terminate();
                 }
 
                 break;
@@ -647,5 +648,13 @@ class LoggerBridge implements \RequestFilter
             'memory_limit',
             $this->getSuhosinMemoryLimit() - $this->reserveMemory
         );
+    }
+
+    /**
+     * Provides ability to stub exits in unit tests
+     */
+    protected function terminate()
+    {
+        exit(1);
     }
 }

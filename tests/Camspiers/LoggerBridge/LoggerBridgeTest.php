@@ -20,6 +20,8 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     public function tearDown()
     {
         ini_set('display_errors', true);
+        restore_error_handler();
+        restore_exception_handler();
     }
     /**
      * Helper method to return a stub of a logger interface
@@ -43,25 +45,15 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $reportErrorsWhenNotLive = true,
         $reserveMemory = null
     ) {
-        if ($methods !== null) {
-            $bridge = $this->getMock(
-                __NAMESPACE__ . '\\LoggerBridge',
-                $methods,
-                array(
-                    $logger ? : $this->getLoggerStub(),
-                    $reportErrorsWhenNotLive,
-                    $reserveMemory
-                )
-            );
-        } else {
-            $bridge = new LoggerBridge(
+        return $this->getMock(
+            __NAMESPACE__ . '\\LoggerBridge',
+            is_array($methods) ? array_merge(array('terminate'), $methods) : array('terminate'),
+            array(
                 $logger ? : $this->getLoggerStub(),
                 $reportErrorsWhenNotLive,
                 $reserveMemory
-            );
-        }
-
-        return $bridge;
+            )
+        );
     }
     /**
      * A helper method to get a mock that doesn't call its constructor
@@ -288,47 +280,6 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
 
         $bridge->errorHandler(
             E_USER_ERROR,
-            $errstr,
-            $errfile,
-            $errline
-        );
-    }
-    /**
-     * Tests how the error handler calls notice errors
-     */
-    public function testErrorHandlerNotice()
-    {
-        $bridge = $this->getLoggerBridge(
-            null,
-            $logger = $this->getLoggerStub()
-        );
-
-        $bridge->setEnvReporter(
-            $env = $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter')
-        );
-
-        // isLive won't be called because reportErrorsWhenNotLive is true
-        $env->expects($this->never())
-            ->method('isLive')
-            ->will($this->returnValue(true));
-
-        $bridge->setErrorReporter(
-            $reporter = $this->getMock(__NAMESPACE__ . '\\ErrorReporter\\ErrorReporter')
-        );
-
-        $logger->expects($this->once())
-            ->method('notice')
-            ->with(
-                $errstr = 'error string',
-                $this->logicalAnd(
-                    $this->contains($errfile = 'somefile'),
-                    $this->contains($errline = 'someline'),
-                    $this->contains('')
-                )
-            );
-
-        $bridge->errorHandler(
-            E_USER_NOTICE,
             $errstr,
             $errfile,
             $errline
