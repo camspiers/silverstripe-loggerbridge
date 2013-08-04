@@ -110,7 +110,36 @@ Injector:
     class: Monolog\Processor\MemoryPeakUsageProcessor
 ```
 
+### Attaching the logger as early as possible
+
+SilverStripe currently doesn't provide any way to replace the default `Debug` error handlers prior to the
+database connection etc. But the following patch will use the Logger Bridge as early as possible.
+
+To apply the patch, run the following from the `framework` directory of a `3.1.x-dev` install.
+ 
+	patch -p1 < framework.patch
+
+`framework.patch`
+
+```diff
+diff --git a/core/Core.php b/core/Core.php
+index bc3f583..4c9f59e 100644
+--- a/core/Core.php
++++ b/core/Core.php
+@@ -131,7 +131,7 @@ if(Director::isLive()) {
+ /**
+  * Load error handlers
+  */
+-Debug::loadErrorHandlers();
++Injector::inst()->get('LoggerBridge')->registerGlobalHandlers();
+ 
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+```
+
 ## Unit testing
+
+Logger Bridge has good unit test converage. To run the unit tests:
 
     $ composer install --dev --prefer-dist
     $ vendor/bin/phpunit
