@@ -1,6 +1,6 @@
 # SilverStripe Logger Bridge [![Build Status](https://travis-ci.org/camspiers/silverstripe-loggerbridge.png?branch=master)](https://travis-ci.org/camspiers/silverstripe-loggerbridge)
 
-Provides easy usage of `PSR-3` loggers (like [Monolog](https://github.com/Seldaek/monolog)) in SilverStripe.
+Provides easy usage of `PSR-3` loggers (like [monolog](https://github.com/Seldaek/monolog)) in SilverStripe.
 
 The API is currently experimental and as such is at major [version](http://semver.org/) `0`.
 
@@ -29,7 +29,7 @@ The API is currently experimental and as such is at major [version](http://semve
 				constructor:
 					0: '%$Monolog'
 
-## Advanced setup
+## Advanced-style setup
 
 This setup provides the following:
 
@@ -142,7 +142,7 @@ index bc3f583..4c9f59e 100644
 Logger Bridge has good unit test converage. To run the unit tests:
 
     $ composer install --dev --prefer-dist
-    $ vendor/bin/phpunit
+    $ phpunit
     
 ---
 ##License
