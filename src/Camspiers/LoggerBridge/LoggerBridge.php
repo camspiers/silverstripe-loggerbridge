@@ -177,7 +177,7 @@ class LoggerBridge implements \RequestFilter
     /**
      * @return boolean
      */
-    public function getRegistered()
+    public function isRegistered()
     {
         return $this->registered;
     }
@@ -211,7 +211,7 @@ class LoggerBridge implements \RequestFilter
     /**
      * @return boolean
      */
-    public function getDisplayErrorsWhenNotLive()
+    public function isDisplayErrorsWhenNotLive()
     {
         return $this->displayErrorsWhenNotLive;
     }
@@ -349,14 +349,18 @@ class LoggerBridge implements \RequestFilter
             // Restore the previous error handler if available
             set_error_handler(
                 is_callable($this->errorHandler)
-                    ? $this->errorHandler
-                    : function () {}
+                ? $this->errorHandler
+                : function () {
+                    
+                }
             );
             // Restore the previous exception handler if available
             set_exception_handler(
                 is_callable($this->exceptionHandler)
-                    ? $this->exceptionHandler
-                    : function () {}
+                ? $this->exceptionHandler
+                : function () {
+                    
+                }
             );
             $this->registered = false;
         }
@@ -417,11 +421,9 @@ class LoggerBridge implements \RequestFilter
 
                 // Check that it is the type of error to report
                 // Check the error_reporting level in comparison with the $errno (honouring the environment)
-                if (
-                    $logType === 'error'
+                if ($logType === 'error'
                     &&
-                    ($errno & $errorReporting) === $errno
-                ) {
+                    ($errno & $errorReporting) === $errno) {
                     // Check that $displayErrorsWhenNotLive is on or the site is live
                     if ($this->displayErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
                         $this->getErrorReporter()->reportError(
@@ -478,11 +480,7 @@ class LoggerBridge implements \RequestFilter
      */
     public function fatalHandler()
     {
-        if (
-            $this->getRegistered()
-            &&
-            $error = $this->getLastErrorFatal()
-        ) {
+        if ($this->isRegistered() && $error = $this->getLastErrorFatal()) {
             if ($this->isMemoryExhaustedError($error)) {
                 // We can safely change the memory limit be the reserve amount because if suhosin is relevant
                 // the memory will have been decreased prior to exhaustion
@@ -518,8 +516,7 @@ class LoggerBridge implements \RequestFilter
     protected function getLastErrorFatal()
     {
         $error = error_get_last();
-        if (
-            $error
+        if ($error
             &&
             in_array(
                 $error['type'],
@@ -527,8 +524,7 @@ class LoggerBridge implements \RequestFilter
                     E_ERROR,
                     E_CORE_ERROR
                 )
-            )
-        ) {
+            )) {
             return $error;
         } else {
             return false;
@@ -595,10 +591,13 @@ class LoggerBridge implements \RequestFilter
         switch($unit) {
             case 'g':
                 $memoryLimit *= 1024;
+                // intentional
             case 'm':
                 $memoryLimit *= 1024;
+                // intentional
             case 'k':
                 $memoryLimit *= 1024;
+                // intentional
         }
         return $memoryLimit;
     }

@@ -120,13 +120,13 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(true));
 
         // Check that things aren't registered
-        $this->assertNull($bridge->getRegistered());
+        $this->assertNull($bridge->isRegistered());
 
         // Do the registration
         $bridge->registerGlobalHandlers();
 
         // Check that things registered
-        $this->assertTrue($bridge->getRegistered());
+        $this->assertTrue($bridge->isRegistered());
     }
     /**
      * Test that the actual error handlers are registered once
@@ -449,7 +449,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     {
         $bridge = $this->getLoggerBridge(
             array(
-                'getRegistered',
+                'isRegistered',
                 'restoreMemory'
             ),
             $logger = $this->getLoggerStub()
@@ -467,7 +467,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('getRegistered')
+            ->method('isRegistered')
             ->will($this->returnValue(false));
 
         // We expect the log to never happen
@@ -485,7 +485,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     {
         $bridge = $this->getLoggerBridge(
             array(
-                'getRegistered',
+                'isRegistered',
                 'getLastErrorFatal',
                 'restoreMemory'
             ),
@@ -504,7 +504,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('getRegistered')
+            ->method('isRegistered')
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
@@ -526,7 +526,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     {
         $bridge = $this->getLoggerBridge(
             array(
-                'getRegistered',
+                'isRegistered',
                 'getLastErrorFatal',
                 'restoreMemory'
             ),
@@ -547,7 +547,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('getRegistered')
+            ->method('isRegistered')
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
@@ -584,7 +584,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     {
         $bridge = $this->getLoggerBridge(
             array(
-                'getRegistered',
+                'isRegistered',
                 'getLastErrorFatal',
                 'restoreMemory'
             ),
@@ -605,7 +605,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('getRegistered')
+            ->method('isRegistered')
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
@@ -642,7 +642,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     {
         $bridge = $this->getLoggerBridge(
             array(
-                'getRegistered',
+                'isRegistered',
                 'getLastErrorFatal',
                 'restoreMemory'
             ),
@@ -661,7 +661,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('getRegistered')
+            ->method('isRegistered')
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
@@ -695,7 +695,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     {
         $bridge = $this->getLoggerBridge(
             array(
-                'getRegistered',
+                'isRegistered',
                 'getLastErrorFatal',
                 'changeMemoryLimit'
             )
@@ -710,7 +710,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('getRegistered')
+            ->method('isRegistered')
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
