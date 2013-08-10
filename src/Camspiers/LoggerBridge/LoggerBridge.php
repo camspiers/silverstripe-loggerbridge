@@ -41,7 +41,7 @@ class LoggerBridge implements \RequestFilter
     /**
      * @var bool
      */
-    protected $displayErrorsWhenNotLive = true;
+    protected $showErrNotLive = true;
 
     /**
      * @var int
@@ -102,18 +102,18 @@ class LoggerBridge implements \RequestFilter
 
     /**
      * @param \Psr\Log\LoggerInterface $logger
-     * @param bool                     $displayErrorsWhenNotLive If false stops the display of SilverStripe errors
+     * @param bool                     $showErrNotLive If false stops the display of SilverStripe errors
      * @param null                     $reserveMemory           The amount of memory to reserve for out of memory errors
      * @param null|int                 $reportLevel             Allow the specification of a reporting level
      */
     public function __construct(
         LoggerInterface $logger,
-        $displayErrorsWhenNotLive = true,
+        $showErrNotLive = true,
         $reserveMemory = null,
         $reportLevel = null
     ) {
         $this->logger = $logger;
-        $this->displayErrorsWhenNotLive = (bool) $displayErrorsWhenNotLive;
+        $this->showErrNotLive = (bool) $showErrNotLive;
         if ($reserveMemory !== null) {
             $this->setReserveMemory($reserveMemory);
         }
@@ -201,19 +201,19 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
-     * @param boolean $displayErrorsWhenNotLive
+     * @param boolean $showErrNotLive
      */
-    public function setDisplayErrorsWhenNotLive($displayErrorsWhenNotLive)
+    public function setShowErrNotLive($showErrNotLive)
     {
-        $this->displayErrorsWhenNotLive = (bool) $displayErrorsWhenNotLive;
+        $this->showErrNotLive = (bool) $showErrNotLive;
     }
 
     /**
      * @return boolean
      */
-    public function isDisplayErrorsWhenNotLive()
+    public function isShowErrNotLive()
     {
-        return $this->displayErrorsWhenNotLive;
+        return $this->showErrNotLive;
     }
 
     /**
@@ -275,6 +275,7 @@ class LoggerBridge implements \RequestFilter
      * @param  \Session        $session
      * @param  \DataModel      $model
      * @return bool
+     * @SuppressWarnings("unused")
      */
     public function preRequest(
         \SS_HTTPRequest $request,
@@ -292,6 +293,7 @@ class LoggerBridge implements \RequestFilter
      * @param  \SS_HTTPResponse $response
      * @param  \DataModel       $model
      * @return bool
+     * @SuppressWarnings("unused")
      */
     public function postRequest(
         \SS_HTTPRequest $request,
@@ -315,7 +317,7 @@ class LoggerBridge implements \RequestFilter
         if (!$this->registered) {
             // If the developer wants to see errors in dev mode then don't let php display them
             if (!$this->getEnvReporter()->isLive()) {
-                ini_set('display_errors', !$this->displayErrorsWhenNotLive);
+                ini_set('display_errors', !$this->showErrNotLive);
             }
             // Store the request and model for use in reporting
             $this->request = $request;
@@ -424,8 +426,8 @@ class LoggerBridge implements \RequestFilter
                 if ($logType === 'error'
                     &&
                     ($errno & $errorReporting) === $errno) {
-                    // Check that $displayErrorsWhenNotLive is on or the site is live
-                    if ($this->displayErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
+                    // Check that $showErrNotLive is on or the site is live
+                    if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
                         $this->getErrorReporter()->reportError(
                             $errno,
                             $errstr,
@@ -462,7 +464,7 @@ class LoggerBridge implements \RequestFilter
         );
 
         // Exceptions must be reported in general because they stop the regular display of the page
-        if ($this->displayErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
+        if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
             $this->getErrorReporter()->reportError(
                 E_USER_ERROR,
                 $message,
@@ -497,7 +499,7 @@ class LoggerBridge implements \RequestFilter
             );
 
             // Fatal errors should be reported when live as they stop the display of regular output
-            if ($this->displayErrorsWhenNotLive || $this->getEnvReporter()->isLive()) {
+            if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
                 $this->getErrorReporter()->reportError(
                     E_CORE_ERROR,
                     $error['message'],

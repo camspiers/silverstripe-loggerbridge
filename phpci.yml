@@ -7,7 +7,7 @@ build_settings:
 
 setup:
     composer:
-        action: "install"
+        action: "install --dev"
 
 test:
     php_unit:
