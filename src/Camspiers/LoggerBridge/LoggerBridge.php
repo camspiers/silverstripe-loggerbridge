@@ -459,7 +459,7 @@ class LoggerBridge implements \RequestFilter
                 'errline'   => $exception->getLine(),
                 'request'   => $this->format($this->request),
                 'model'     => $this->format($this->model),
-                'backtrace' => $this->format($this->getBacktrace())
+                'backtrace' => $this->format($exception->getTrace())
             )
         );
 

@@ -19,3 +19,5 @@ test:
         standard: "PSR2"
     php_cpd:
         allow_failures: true
+    php_loc:
+        allow_failures: true
