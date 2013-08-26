@@ -79,6 +79,11 @@ class LoggerBridge implements \RequestFilter
     protected $backtraceLimit = 0;
 
     /**
+     * @var bool
+     */
+    protected $reportBacktrace = false;
+
+    /**
      * Defines the way error types are logged
      * @var
      */
@@ -242,11 +247,19 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
-     * @return int
+     * @return bool
      */
     public function getBacktraceLimit()
     {
         return $this->backtraceLimit;
+    }
+
+    /**
+     * @param bool $reportBacktrace
+     */
+    public function setReportBacktrace($reportBacktrace)
+    {
+        $this->reportBacktrace = $reportBacktrace;
     }
 
     /**
@@ -329,7 +342,7 @@ class LoggerBridge implements \RequestFilter
             // If the shutdown function hasn't been registered register it
             if ($this->registered === null) {
                 $this->registerFatalErrorHandler();
-                
+
                 // If suhosin is relevant then decrease the memory_limit by the reserveMemory amount
                 // otherwise we should be able to increase the memory by our reserveMemory amount without worry
                 if ($this->isSuhosinRelevant()) {
@@ -351,17 +364,17 @@ class LoggerBridge implements \RequestFilter
             // Restore the previous error handler if available
             set_error_handler(
                 is_callable($this->errorHandler)
-                ? $this->errorHandler
-                : function () {
-                    
+                    ? $this->errorHandler
+                    : function () {
+
                 }
             );
             // Restore the previous exception handler if available
             set_exception_handler(
                 is_callable($this->exceptionHandler)
-                ? $this->exceptionHandler
-                : function () {
-                    
+                    ? $this->exceptionHandler
+                    : function () {
+
                 }
             );
             $this->registered = false;
@@ -410,16 +423,18 @@ class LoggerBridge implements \RequestFilter
         foreach ($this->errorLogGroups as $logType => $errorTypes) {
             if (in_array($errno, $errorTypes)) {
                 // Log all errors regardless of type
-                $this->logger->$logType(
-                    $errstr,
-                    array(
-                        'errfile'   => $errfile,
-                        'errline'   => $errline,
-                        'request'   => $this->format($this->request),
-                        'model'     => $this->format($this->model),
-                        'backtrace' => $this->format($this->getBacktrace())
-                    )
+                $context = array(
+                    'errfile'   => $errfile,
+                    'errline'   => $errline,
+                    'request'   => $this->format($this->request),
+                    'model'     => $this->format($this->model)
                 );
+
+                if ($this->reportBacktrace) {
+                    $context['backtrace'] = $this->format($this->getBacktrace());
+                }
+
+                $this->logger->$logType($errstr, $context);
 
                 // Check that it is the type of error to report
                 // Check the error_reporting level in comparison with the $errno (honouring the environment)
@@ -436,7 +451,7 @@ class LoggerBridge implements \RequestFilter
                             ucfirst($logType)
                         );
                     }
-                    
+
                     $this->terminate();
                 }
 
@@ -452,15 +467,20 @@ class LoggerBridge implements \RequestFilter
      */
     public function exceptionHandler(\Exception $exception)
     {
+        $context = array(
+            'errfile'   => $exception->getFile(),
+            'errline'   => $exception->getLine(),
+            'request'   => $this->format($this->request),
+            'model'     => $this->format($this->model)
+        );
+
+        if ($this->reportBacktrace) {
+            $context['backtrace'] = $this->format($exception->getTrace());
+        }
+
         $this->logger->error(
             $message = 'Uncaught ' . get_class($exception) . ': ' . $exception->getMessage(),
-            array(
-                'errfile'   => $exception->getFile(),
-                'errline'   => $exception->getLine(),
-                'request'   => $this->format($this->request),
-                'model'     => $this->format($this->model),
-                'backtrace' => $this->format($exception->getTrace())
-            )
+            $context
         );
 
         // Exceptions must be reported in general because they stop the regular display of the page
@@ -489,14 +509,16 @@ class LoggerBridge implements \RequestFilter
                 $this->changeMemoryLimit($this->reserveMemory);
             }
 
-            $this->logger->critical(
-                $error['message'],
-                array(
-                    'errfile'   => $error['file'],
-                    'errline'   => $error['line'],
-                    'backtrace' => $this->format($this->getBacktrace())
-                )
+            $context = array(
+                'errfile'   => $error['file'],
+                'errline'   => $error['line']
             );
+
+            if ($this->reportBacktrace) {
+                $context['backtrace'] = $this->format($this->getBacktrace());
+            }
+
+            $this->logger->critical($error['message'], $context);
 
             // Fatal errors should be reported when live as they stop the display of regular output
             if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
@@ -593,13 +615,13 @@ class LoggerBridge implements \RequestFilter
         switch($unit) {
             case 'g':
                 $memoryLimit *= 1024;
-                // intentional
+            // intentional
             case 'm':
                 $memoryLimit *= 1024;
-                // intentional
+            // intentional
             case 'k':
                 $memoryLimit *= 1024;
-                // intentional
+            // intentional
         }
         return $memoryLimit;
     }
@@ -619,7 +641,7 @@ class LoggerBridge implements \RequestFilter
     {
         return $this->translateMemoryLimit(ini_get('suhosin.memory_limit'));
     }
-    
+
     /**
      * Checks if suhosin is enabled and the memory_limit is closer to suhosin.memory_limit than reserveMemory
      * It is in this case where it is relevant to decrease the memory available to the script before it uses all
@@ -639,7 +661,7 @@ class LoggerBridge implements \RequestFilter
     {
         return $this->getSuhosinMemoryLimit() - $this->getMemoryLimit();
     }
-    
+
     /**
      * Set the memory_limit so we have enough to handle errors when suhosin is relevant
      */
