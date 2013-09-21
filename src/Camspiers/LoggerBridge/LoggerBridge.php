@@ -363,19 +363,11 @@ class LoggerBridge implements \RequestFilter
             $this->model = null;
             // Restore the previous error handler if available
             set_error_handler(
-                is_callable($this->errorHandler)
-                    ? $this->errorHandler
-                    : function () {
-
-                }
+                is_callable($this->errorHandler) ? $this->errorHandler : function () { }
             );
             // Restore the previous exception handler if available
             set_exception_handler(
-                is_callable($this->exceptionHandler)
-                    ? $this->exceptionHandler
-                    : function () {
-
-                }
+                is_callable($this->exceptionHandler) ? $this->exceptionHandler : function () { }
             );
             $this->registered = false;
         }
@@ -615,13 +607,13 @@ class LoggerBridge implements \RequestFilter
         switch($unit) {
             case 'g':
                 $memoryLimit *= 1024;
-            // intentional
+                // intentional
             case 'm':
                 $memoryLimit *= 1024;
-            // intentional
+                // intentional
             case 'k':
                 $memoryLimit *= 1024;
-            // intentional
+                // intentional
         }
         return $memoryLimit;
     }
