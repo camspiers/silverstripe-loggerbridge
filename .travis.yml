@@ -7,3 +7,10 @@ php:
 before_script:
   - composer self-update
   - composer install --dev --prefer-dist
+
+script:
+  - phpunit --coverage-clover=coverage.clover
+  
+after_script:
+  - wget https://scrutinizer-ci.com/ocular.phar
+  - php -r "if (version_compare(PHP_VERSION, '5.4.0') >= 0) { passthru('php ocular.phar code-coverage:upload --format=php-clover coverage.clover'); }"
