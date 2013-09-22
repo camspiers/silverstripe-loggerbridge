@@ -156,7 +156,7 @@ class LoggerBridge implements \RequestFilter
      */
     public function getErrorReporter()
     {
-        $this->errorReporter = $this->errorReporter ? : new DebugErrorReporter();
+        $this->errorReporter = $this->errorReporter ? : new DebugErrorReporter($this->getEnvReporter());
 
         return $this->errorReporter;
     }

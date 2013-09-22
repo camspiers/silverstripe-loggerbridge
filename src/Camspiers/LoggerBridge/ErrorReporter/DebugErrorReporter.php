@@ -2,6 +2,7 @@
 
 namespace Camspiers\LoggerBridge\ErrorReporter;
 
+use Camspiers\LoggerBridge\EnvReporter\EnvReporter;
 use Debug;
 use Director;
 
@@ -10,6 +11,17 @@ use Director;
  */
 class DebugErrorReporter implements ErrorReporter
 {
+    /**
+     * @var \Camspiers\LoggerBridge\EnvReporter\EnvReporter
+     */
+    protected $envReporter;
+    /**
+     * @param \Camspiers\LoggerBridge\EnvReporter\EnvReporter $envReporter
+     */
+    public function __construct(EnvReporter $envReporter)
+    {
+        $this->envReporter = $envReporter;
+    }
     /**
      * @param $errno
      * @param $errstr
@@ -24,7 +36,7 @@ class DebugErrorReporter implements ErrorReporter
         $errline,
         $errtype
     ) {
-        if (!Director::isLive()) {
+        if (!$this->envReporter->isLive()) {
             Debug::showError(
                 $errno,
                 $errstr,
