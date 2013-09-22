@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Enables global SilverStripe logging with a PSR-3 logger like Monolog.
  *
- * The logger is attached in by using a RequestProcessor filter. This behaviour is required
+ * The logger is attached by using a Request Processor filter. This behaviour is required
  * so the logger is attached after the environment only and except rules in yml are applied.
  *
  * @author Cam Spiers <camspiers@gmail.com>
@@ -494,7 +494,9 @@ class LoggerBridge implements \RequestFilter
      */
     public function fatalHandler()
     {
-        if ($this->isRegistered() && $error = $this->getLastErrorFatal()) {
+        $error = $this->getLastError();
+        
+        if ($this->isRegistered() && $this->isFatalError($error)) {
             if ($this->isMemoryExhaustedError($error)) {
                 // We can safely change the memory limit be the reserve amount because if suhosin is relevant
                 // the memory will have been decreased prior to exhaustion
@@ -526,25 +528,27 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
-     * Returns whether or not the last error was fatal, if it was then return the error
-     * @return array|bool
+     * Returns whether or not the last error was fatal
+     * @param $error
+     * @return bool
      */
-    protected function getLastErrorFatal()
+    protected function isFatalError($error)
     {
-        $error = error_get_last();
-        if ($error
-            &&
-            in_array(
-                $error['type'],
-                array(
-                    E_ERROR,
-                    E_CORE_ERROR
-                )
-            )) {
-            return $error;
-        } else {
-            return false;
-        }
+        return $error && in_array(
+            $error['type'],
+            array(
+                E_ERROR,
+                E_CORE_ERROR
+            )
+        );
+    }
+
+    /**
+     * @return array
+     */
+    protected function getLastError()
+    {
+        return error_get_last();
     }
 
     /**

@@ -486,7 +486,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge = $this->getLoggerBridge(
             array(
                 'isRegistered',
-                'getLastErrorFatal',
+                'getLastError',
                 'restoreMemory'
             ),
             $logger = $this->getLoggerStub()
@@ -508,7 +508,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
-            ->method('getLastErrorFatal')
+            ->method('getLastError')
             ->will($this->returnValue(false));
 
         // We expect the log to never happen
@@ -527,7 +527,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge = $this->getLoggerBridge(
             array(
                 'isRegistered',
-                'getLastErrorFatal',
+                'getLastError',
                 'restoreMemory'
             ),
             $logger = $this->getLoggerStub(),
@@ -551,10 +551,11 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
-            ->method('getLastErrorFatal')
+            ->method('getLastError')
             ->will(
                 $this->returnValue(
                     array(
+                        'type'    => E_ERROR,
                         'message' => 'Test',
                         'file'    => 'file',
                         'line'    => 'line'
@@ -585,7 +586,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge = $this->getLoggerBridge(
             array(
                 'isRegistered',
-                'getLastErrorFatal',
+                'getLastError',
                 'restoreMemory'
             ),
             $logger = $this->getLoggerStub(),
@@ -609,10 +610,11 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
-            ->method('getLastErrorFatal')
+            ->method('getLastError')
             ->will(
                 $this->returnValue(
                     array(
+                        'type'    => E_ERROR,
                         'message' => 'Test',
                         'file'    => 'file',
                         'line'    => 'line'
@@ -643,7 +645,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge = $this->getLoggerBridge(
             array(
                 'isRegistered',
-                'getLastErrorFatal',
+                'getLastError',
                 'restoreMemory'
             ),
             $logger = $this->getLoggerStub()
@@ -665,10 +667,11 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
-            ->method('getLastErrorFatal')
+            ->method('getLastError')
             ->will(
                 $this->returnValue(
                     array(
+                        'type'    => E_ERROR,
                         'message' => 'Test',
                         'file'    => 'file',
                         'line'    => 'line'
@@ -696,7 +699,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge = $this->getLoggerBridge(
             array(
                 'isRegistered',
-                'getLastErrorFatal',
+                'getLastError',
                 'changeMemoryLimit'
             )
         );
@@ -714,10 +717,11 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(true));
 
         $bridge->expects($this->once())
-            ->method('getLastErrorFatal')
+            ->method('getLastError')
             ->will(
                 $this->returnValue(
                     array(
+                        'type'    => E_ERROR,
                         'message' => 'memory exhausted',
                         'file'    => 'file',
                         'line'    => 'line'
