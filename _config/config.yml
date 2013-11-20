@@ -1,6 +1,13 @@
 Injector:
   LoggerBridge:
     class: 'Camspiers\LoggerBridge\LoggerBridge'
+    properties:
+      BacktraceReporter: '%$FilteredBacktraceReporter'
+  FilteredBacktraceReporter:
+    class: 'Camspiers\LoggerBridge\BacktraceReporter\FilteredBacktraceReporter'
+    constructor:
+      0:
+        - "Camspiers\\LoggerBridge(\\([\w][\w]*))*(?:->)[\w][\w]*"
   RequestProcessor:
     class: RequestProcessor
     properties:

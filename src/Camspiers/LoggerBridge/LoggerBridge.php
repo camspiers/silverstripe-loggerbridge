@@ -2,6 +2,8 @@
 
 namespace Camspiers\LoggerBridge;
 
+use Camspiers\LoggerBridge\BacktraceReporter\BacktraceReporter;
+use Camspiers\LoggerBridge\BacktraceReporter\BasicBacktraceReporter;
 use Camspiers\LoggerBridge\EnvReporter\DirectorEnvReporter;
 use Camspiers\LoggerBridge\EnvReporter\EnvReporter;
 use Camspiers\LoggerBridge\ErrorReporter\DebugErrorReporter;
@@ -34,6 +36,11 @@ class LoggerBridge implements \RequestFilter
     protected $envReporter;
 
     /**
+     * @var \Camspiers\LoggerBridge\BacktraceReporter\BacktraceReporter
+     */
+    protected $backtraceReporter;
+
+    /**
      * @var bool|null
      */
     protected $registered;
@@ -41,7 +48,7 @@ class LoggerBridge implements \RequestFilter
     /**
      * @var bool
      */
-    protected $showErrNotLive = true;
+    protected $showErrors = true;
 
     /**
      * @var int
@@ -74,11 +81,6 @@ class LoggerBridge implements \RequestFilter
     protected $model;
 
     /**
-     * @var int
-     */
-    protected $backtraceLimit = 0;
-
-    /**
      * @var bool
      */
     protected $reportBacktrace = false;
@@ -107,18 +109,18 @@ class LoggerBridge implements \RequestFilter
 
     /**
      * @param \Psr\Log\LoggerInterface $logger
-     * @param bool                     $showErrNotLive If false stops the display of SilverStripe errors
-     * @param null                     $reserveMemory           The amount of memory to reserve for out of memory errors
-     * @param null|int                 $reportLevel             Allow the specification of a reporting level
+     * @param bool                     $showErrors    If false stops the display of SilverStripe errors
+     * @param null                     $reserveMemory The amount of memory to reserve for out of memory errors
+     * @param null|int                 $reportLevel   Allow the specification of a reporting level
      */
     public function __construct(
         LoggerInterface $logger,
-        $showErrNotLive = true,
+        $showErrors = true,
         $reserveMemory = null,
         $reportLevel = null
     ) {
         $this->logger = $logger;
-        $this->showErrNotLive = (bool) $showErrNotLive;
+        $this->showErrors = (bool) $showErrors;
         if ($reserveMemory !== null) {
             $this->setReserveMemory($reserveMemory);
         }
@@ -180,6 +182,24 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
+     * @param \Camspiers\LoggerBridge\BacktraceReporter\BacktraceReporter $backtraceReporter
+     */
+    public function setBacktraceReporter(BacktraceReporter $backtraceReporter)
+    {
+        $this->backtraceReporter = $backtraceReporter;
+    }
+
+    /**
+     * @return \Camspiers\LoggerBridge\BacktraceReporter\BacktraceReporter
+     */
+    public function getBacktraceReporter()
+    {
+        $this->backtraceReporter = $this->backtraceReporter ? : new BasicBacktraceReporter();
+        
+        return $this->backtraceReporter;
+    }
+
+    /**
      * @return boolean
      */
     public function isRegistered()
@@ -206,19 +226,19 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
-     * @param boolean $showErrNotLive
+     * @param boolean $showErrors
      */
-    public function setShowErrNotLive($showErrNotLive)
+    public function setShowErrors($showErrors)
     {
-        $this->showErrNotLive = (bool) $showErrNotLive;
+        $this->showErrors = (bool) $showErrors;
     }
 
     /**
      * @return boolean
      */
-    public function isShowErrNotLive()
+    public function isShowErrors()
     {
-        return $this->showErrNotLive;
+        return $this->showErrors;
     }
 
     /**
@@ -235,23 +255,6 @@ class LoggerBridge implements \RequestFilter
     public function getReportLevel()
     {
         return $this->reportLevel;
-    }
-
-    /**
-     * Only applies in 5.4
-     * @param int $backtraceLimit
-     */
-    public function setBacktraceLimit($backtraceLimit)
-    {
-        $this->backtraceLimit = $backtraceLimit;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getBacktraceLimit()
-    {
-        return $this->backtraceLimit;
     }
 
     /**
@@ -328,10 +331,6 @@ class LoggerBridge implements \RequestFilter
         \DataModel $model = null
     ) {
         if (!$this->registered) {
-            // If the developer wants to see errors in dev mode then don't let php display them
-            if (!$this->getEnvReporter()->isLive()) {
-                ini_set('display_errors', !$this->showErrNotLive);
-            }
             // Store the request and model for use in reporting
             $this->request = $request;
             $this->model = $model;
@@ -423,7 +422,7 @@ class LoggerBridge implements \RequestFilter
                 );
 
                 if ($this->reportBacktrace) {
-                    $context['backtrace'] = $this->format($this->getBacktrace());
+                    $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace();
                 }
 
                 $this->logger->$logType($errstr, $context);
@@ -433,8 +432,8 @@ class LoggerBridge implements \RequestFilter
                 if ($logType === 'error'
                     &&
                     ($errno & $errorReporting) === $errno) {
-                    // Check that $showErrNotLive is on or the site is live
-                    if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
+                    // Check that $showErrors is on or the site is live
+                    if ($this->showErrors || $this->getEnvReporter()->isLive()) {
                         $this->getErrorReporter()->reportError(
                             $errno,
                             $errstr,
@@ -467,7 +466,7 @@ class LoggerBridge implements \RequestFilter
         );
 
         if ($this->reportBacktrace) {
-            $context['backtrace'] = $this->format($exception->getTrace());
+            $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace($exception);
         }
 
         $this->logger->error(
@@ -476,7 +475,7 @@ class LoggerBridge implements \RequestFilter
         );
 
         // Exceptions must be reported in general because they stop the regular display of the page
-        if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
+        if ($this->showErrors || $this->getEnvReporter()->isLive()) {
             $this->getErrorReporter()->reportError(
                 E_USER_ERROR,
                 $message,
@@ -495,7 +494,7 @@ class LoggerBridge implements \RequestFilter
     public function fatalHandler()
     {
         $error = $this->getLastError();
-        
+
         if ($this->isRegistered() && $this->isFatalError($error)) {
             if ($this->isMemoryExhaustedError($error)) {
                 // We can safely change the memory limit be the reserve amount because if suhosin is relevant
@@ -509,13 +508,13 @@ class LoggerBridge implements \RequestFilter
             );
 
             if ($this->reportBacktrace) {
-                $context['backtrace'] = $this->format($this->getBacktrace());
+                $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace();
             }
 
             $this->logger->critical($error['message'], $context);
 
             // Fatal errors should be reported when live as they stop the display of regular output
-            if ($this->showErrNotLive || $this->getEnvReporter()->isLive()) {
+            if ($this->showErrors || $this->getEnvReporter()->isLive()) {
                 $this->getErrorReporter()->reportError(
                     E_CORE_ERROR,
                     $error['message'],
@@ -549,19 +548,6 @@ class LoggerBridge implements \RequestFilter
     protected function getLastError()
     {
         return error_get_last();
-    }
-
-    /**
-     * Get a backtrace. Allowing for limiting when in 5.4
-     * @return array
-     */
-    protected function getBacktrace()
-    {
-        if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
-            return debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $this->backtraceLimit);
-        } else {
-            return debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        }
     }
 
     /**
@@ -611,13 +597,13 @@ class LoggerBridge implements \RequestFilter
         switch($unit) {
             case 'g':
                 $memoryLimit *= 1024;
-                // intentional
+            // intentional
             case 'm':
                 $memoryLimit *= 1024;
-                // intentional
+            // intentional
             case 'k':
                 $memoryLimit *= 1024;
-                // intentional
+            // intentional
         }
         return $memoryLimit;
     }

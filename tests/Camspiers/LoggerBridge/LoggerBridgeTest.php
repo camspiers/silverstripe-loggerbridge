@@ -114,11 +114,6 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge = $this->getLoggerBridge();
         $bridge->setEnvReporter($env);
 
-        // Set expectations that isLive will be called once
-        $env->expects($this->once())
-            ->method('isLive')
-            ->will($this->returnValue(true));
-
         // Check that things aren't registered
         $this->assertNull($bridge->isRegistered());
 
