@@ -23,6 +23,11 @@ Injector:
     constructor:
       0: '%$LoggerBridgeWhoopsPrettyHandler'
       1: '%$LoggerBridgeEnvReporter'
+
+  LoggerBridgeDebugErrorReporter:
+    class: Camspiers\LoggerBridge\ErrorReporter\DebugErrorReporter
+    constructor:
+      0: '%$LoggerBridgeEnvReporter'
   
   RequestProcessor:
     class: RequestProcessor

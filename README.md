@@ -31,6 +31,16 @@ The API is currently experimental and as such is at major [version](http://semve
 				constructor:
 					0: '%$Monolog'
 
+### Changing the way errors display in development
+
+By default Logger Bridge uses `Whoops` for the display of errors and exceptions. You can change to using SilverStripe
+error display by adding the following to your yml:
+
+		Injector:
+			LoggerBridge:
+				properties:
+					ErrorReporter: '%$LoggerBridgeDebugErrorReporter'
+
 ## Advanced-style setup
 
 This setup provides the following:
