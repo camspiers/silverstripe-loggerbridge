@@ -33,26 +33,26 @@ class BasicBacktraceReporter implements BacktraceReporter
 
     /**
      * Returns a basic backtrace
-     * @param \Exception $exception
+     * @param  \Exception $exception
      * @return array
      */
     public function getBacktrace(\Exception $exception = null)
     {
         $skipLimit = false;
-        
+
         if ($exception instanceof \Exception) {
             $backtrace = $exception->getTrace();
-        } else if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
+        } elseif (version_compare(PHP_VERSION, '5.4.0') >= 0) {
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $this->backtraceLimit);
             $skipLimit = true;
         } else {
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         }
-        
+
         if ($this->backtraceLimit > 0 && !$skipLimit) {
             $backtrace = array_slice($backtrace, 0, $this->backtraceLimit);
         }
-        
+
         return $backtrace;
     }
 }

@@ -9,25 +9,25 @@ class BasicBacktraceReporterTest extends \PHPUnit_Framework_TestCase
     public function testBacktraceLimitGet()
     {
         $reporter = new BasicBacktraceReporter();
-        
+
         $this->assertEquals(0, $reporter->getBacktraceLimit());
     }
-    
+
     public function testGetExceptionBacktrace()
     {
         $reporter = new BasicBacktraceReporter();
-        
+
         $exception = new \Exception('Test');
-        
+
         $this->assertEquals($exception->getTrace(), $reporter->getBacktrace($exception));
     }
 
     public function testGetGlobalBacktrace()
     {
         $reporter = new BasicBacktraceReporter();
-        
+
         $reporterBacktrace = $reporter->getBacktrace();
-        
+
         array_shift($reporterBacktrace);
 
         $this->assertEquals(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS), $reporterBacktrace);

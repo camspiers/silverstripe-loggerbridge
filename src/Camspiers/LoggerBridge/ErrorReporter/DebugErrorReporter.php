@@ -23,10 +23,11 @@ class DebugErrorReporter implements ErrorReporter
     }
 
     /**
-     * @param \Exception $exception
+     * @param \Exception      $exception
      * @param \SS_HTTPRequest $request
      */
-    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null) {
+    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null)
+    {
         if (!$this->envReporter->isLive()) {
             Debug::showError(
                 $exception->getCode(),

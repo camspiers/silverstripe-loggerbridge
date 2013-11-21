@@ -10,7 +10,7 @@ interface BacktraceReporter
 {
     /**
      * Returns a backtrace for logging
-     * @param \Exception $exception
+     * @param  \Exception $exception
      * @return array
      */
     public function getBacktrace(\Exception $exception = null);

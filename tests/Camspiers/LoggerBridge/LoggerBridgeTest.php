@@ -217,7 +217,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
     public function testRegisterGlobalHandlersIsSuhosinRelevant()
     {
         $env = $this->getMock(__NAMESPACE__ . '\\EnvReporter\\EnvReporter', array('isLive'));
-        
+
         $bridge = $this->getLoggerBridge(
             array(
                 'isSuhosinRelevant',
@@ -231,7 +231,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
 
         $bridge->expects($this->once())
             ->method('ensureSuhosinMemory');
-        
+
         $bridge->setEnvReporter($env);
 
         $bridge->registerGlobalHandlers();

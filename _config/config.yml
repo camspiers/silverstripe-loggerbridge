@@ -11,10 +11,10 @@ Injector:
     constructor:
       0:
         - "Camspiers\\LoggerBridge(\\([\w][\w]*))*(?:->)[\w][\w]*"
-      
+
   LoggerBridgeEnvReporter:
     class: Camspiers\LoggerBridge\EnvReporter\DirectorEnvReporter
-        
+
   LoggerBridgeWhoopsPrettyHandler:
     class: Whoops\Handler\PrettyPageHandler
 
@@ -28,7 +28,7 @@ Injector:
     class: Camspiers\LoggerBridge\ErrorReporter\DebugErrorReporter
     constructor:
       0: '%$LoggerBridgeEnvReporter'
-  
+
   RequestProcessor:
     class: RequestProcessor
     properties:

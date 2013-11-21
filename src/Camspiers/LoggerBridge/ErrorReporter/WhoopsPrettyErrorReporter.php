@@ -23,7 +23,7 @@ class WhoopsPrettyErrorReporter implements ErrorReporter
     protected $envReporter;
 
     /**
-     * @param \Whoops\Handler\PrettyPageHandler $prettyHandler
+     * @param \Whoops\Handler\PrettyPageHandler               $prettyHandler
      * @param \Camspiers\LoggerBridge\EnvReporter\EnvReporter $envReporter
      */
     public function __construct(PrettyPageHandler $prettyHandler, EnvReporter $envReporter)
@@ -33,10 +33,11 @@ class WhoopsPrettyErrorReporter implements ErrorReporter
     }
 
     /**
-     * @param \Exception $exception
+     * @param \Exception      $exception
      * @param \SS_HTTPRequest $request
      */
-    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null) {
+    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null)
+    {
         if (!$this->envReporter->isLive()) {
             $whoops = new Run();
             $whoops->pushHandler($this->prettyHandler)->handleException($exception);

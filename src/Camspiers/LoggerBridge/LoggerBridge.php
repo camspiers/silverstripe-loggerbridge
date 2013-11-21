@@ -195,7 +195,7 @@ class LoggerBridge implements \RequestFilter
     public function getBacktraceReporter()
     {
         $this->backtraceReporter = $this->backtraceReporter ? : new BasicBacktraceReporter();
-        
+
         return $this->backtraceReporter;
     }
 
@@ -608,7 +608,7 @@ class LoggerBridge implements \RequestFilter
     {
         $unit = strtolower(substr($memoryLimit, -1, 1));
         $memoryLimit = (int) $memoryLimit;
-        switch($unit) {
+        switch ($unit) {
             case 'g':
                 $memoryLimit *= 1024;
             // intentional
@@ -619,6 +619,7 @@ class LoggerBridge implements \RequestFilter
                 $memoryLimit *= 1024;
             // intentional
         }
+
         return $memoryLimit;
     }
 

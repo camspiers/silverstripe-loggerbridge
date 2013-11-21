@@ -15,7 +15,7 @@ class FilteredBacktraceReporter extends BasicBacktraceReporter
 
     /**
      * Takes an array of functions names that should be filtered
-     * @param array $filteredFunctions
+     * @param  array             $filteredFunctions
      * @throws \RuntimeException
      */
     public function __construct($filteredFunctions)
@@ -29,13 +29,13 @@ class FilteredBacktraceReporter extends BasicBacktraceReporter
 
     /**
      * Returns a filtered backtrace using regular expressions
-     * @param \Exception $exception
+     * @param  \Exception $exception
      * @return array|void
      */
     public function getBacktrace(\Exception $exception = null)
     {
         $backtrace = parent::getBacktrace($exception);
-        
+
         foreach ($backtrace as $index => $backtraceCall) {
             $functionName = $this->buildFunctionName($backtraceCall);
             foreach ($this->filteredFunctions as $pattern) {
@@ -45,7 +45,7 @@ class FilteredBacktraceReporter extends BasicBacktraceReporter
                 }
             }
         }
-        
+
         return array_values($backtrace);
     }
 

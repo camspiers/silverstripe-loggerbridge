@@ -9,7 +9,7 @@ class FilteredBacktraceReporterTest extends \PHPUnit_Framework_TestCase
     public function testCreateObject()
     {
         $reporter = new FilteredBacktraceReporter(array());
-        
+
         $this->assertInstanceOf('Camspiers\LoggerBridge\BacktraceReporter\FilteredBacktraceReporter', $reporter);
     }
 
@@ -20,7 +20,7 @@ class FilteredBacktraceReporterTest extends \PHPUnit_Framework_TestCase
     {
         new FilteredBacktraceReporter("test");
     }
-    
+
     public function testFilteredFunctionsBacktrace()
     {
         $reporter = new FilteredBacktraceReporter(array());
@@ -28,13 +28,13 @@ class FilteredBacktraceReporterTest extends \PHPUnit_Framework_TestCase
         $exception = new \Exception('Test');
 
         $this->assertEquals($exception->getTrace(), $reporter->getBacktrace($exception));
-        
+
         $reporter = new FilteredBacktraceReporter(
             $fns = array(
                 str_replace('\\', '\\\\', __CLASS__ . '->' . __FUNCTION__)
             )
         );
-        
+
         $this->assertEquals(count($exception->getTrace()) - 1, count($reporter->getBacktrace($exception)));
     }
 }

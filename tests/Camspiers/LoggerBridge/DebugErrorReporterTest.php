@@ -10,17 +10,17 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
     public function testReportErrorNotLive()
     {
         Config::inst()->update('SS_Backtrace', 'ignore_function_args', array());
-        
+
         $envMock = $this->getMock(__NAMESPACE__.'\EnvReporter\EnvReporter');
-        
+
         $envMock->expects($this->once())
             ->method('isLive')
             ->will($this->returnValue(false));
-        
+
         $debugErrorReporter = new DebugErrorReporter($envMock);
-        
+
         ob_start();
-        
+
         $debugErrorReporter->reportError(
             new \ErrorException(
                 'Error message',
@@ -30,10 +30,10 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
                 10
             )
         );
-        
+
         $contents = ob_get_contents();
         ob_end_clean();
-        
+
         $this->assertContains(
             '[User Error]',
             $contents
@@ -49,7 +49,7 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
             $contents
         );
     }
-    
+
     public function testReportErrorLive()
     {
         Config::inst()->update('Director', 'alternate_base_url', 'http://localhost');
@@ -57,7 +57,7 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
         define('FRAMEWORK_DIR', 'framework');
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/';
-        
+
         Config::inst()->update('SS_Backtrace', 'ignore_function_args', array());
 
         $envMock = $this->getMock(__NAMESPACE__.'\EnvReporter\EnvReporter');
@@ -82,7 +82,7 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
 
         $contents = ob_get_contents();
         ob_end_clean();
-        
+
         $this->assertEquals(
             <<<HTML
 <!DOCTYPE html><html><head><title>GET /</title><link rel="stylesheet" type="text/css" href="http://localhost/framework/css/debug.css" /></head><body><div class="info"><h1>Website Error</h1></div></body></html>
