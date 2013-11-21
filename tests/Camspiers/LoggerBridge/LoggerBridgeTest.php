@@ -268,7 +268,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 $errstr = 'error string',
                 $this->logicalAnd(
                     $this->contains($errfile = 'somefile'),
-                    $this->contains($errline = 'someline'),
+                    $this->contains($errline = 0),
                     $this->contains('')
                 )
             );
@@ -309,7 +309,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 $errstr = 'error string',
                 $this->logicalAnd(
                     $this->contains($errfile = 'somefile'),
-                    $this->contains($errline = 'someline'),
+                    $this->contains($errline = 0),
                     $this->contains('')
                 )
             );
@@ -356,7 +356,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 $errstr = 'error string',
                 $this->logicalAnd(
                     $this->contains($errfile = 'somefile'),
-                    $this->contains($errline = 'someline'),
+                    $this->contains($errline = 0),
                     $this->contains('')
                 )
             );
@@ -550,10 +550,10 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
             ->will(
                 $this->returnValue(
                     array(
-                        'type'    => E_ERROR,
+                        'type'    => E_CORE_ERROR,
                         'message' => 'Test',
                         'file'    => 'file',
-                        'line'    => 'line'
+                        'line'    => 0
                     )
                 )
             );
@@ -612,7 +612,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                         'type'    => E_ERROR,
                         'message' => 'Test',
                         'file'    => 'file',
-                        'line'    => 'line'
+                        'line'    => 0
                     )
                 )
             );
@@ -669,7 +669,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                         'type'    => E_ERROR,
                         'message' => 'Test',
                         'file'    => 'file',
-                        'line'    => 'line'
+                        'line'    => 0
                     )
                 )
             );
@@ -719,7 +719,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                         'type'    => E_ERROR,
                         'message' => 'memory exhausted',
                         'file'    => 'file',
-                        'line'    => 'line'
+                        'line'    => 0
                     )
                 )
             );

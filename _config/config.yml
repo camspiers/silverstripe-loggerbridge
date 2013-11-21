@@ -2,12 +2,28 @@ Injector:
   LoggerBridge:
     class: 'Camspiers\LoggerBridge\LoggerBridge'
     properties:
-      BacktraceReporter: '%$FilteredBacktraceReporter'
-  FilteredBacktraceReporter:
+      BacktraceReporter: '%$LoggerBridgeFilteredBacktraceReporter'
+      EnvReporter: '%$LoggerBridgeEnvReporter'
+      ErrorReporter: '%$LoggerBridgeWhoopsPrettyErrorReporter'
+
+  LoggerBridgeFilteredBacktraceReporter:
     class: 'Camspiers\LoggerBridge\BacktraceReporter\FilteredBacktraceReporter'
     constructor:
       0:
         - "Camspiers\\LoggerBridge(\\([\w][\w]*))*(?:->)[\w][\w]*"
+      
+  LoggerBridgeEnvReporter:
+    class: Camspiers\LoggerBridge\EnvReporter\DirectorEnvReporter
+        
+  LoggerBridgeWhoopsPrettyHandler:
+    class: Whoops\Handler\PrettyPageHandler
+
+  LoggerBridgeWhoopsPrettyErrorReporter:
+    class: Camspiers\LoggerBridge\ErrorReporter\WhoopsPrettyErrorReporter
+    constructor:
+      0: '%$LoggerBridgeWhoopsPrettyHandler'
+      1: '%$LoggerBridgeEnvReporter'
+  
   RequestProcessor:
     class: RequestProcessor
     properties:

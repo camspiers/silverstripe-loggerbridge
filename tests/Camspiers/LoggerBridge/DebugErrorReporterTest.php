@@ -22,12 +22,13 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
         ob_start();
         
         $debugErrorReporter->reportError(
-            E_USER_ERROR,
-            'Error message',
-            'example-file.php',
-            10,
-            null,
-            'Error'
+            new \ErrorException(
+                'Error message',
+                E_USER_ERROR,
+                0,
+                'example-file.php',
+                10
+            )
         );
         
         $contents = ob_get_contents();
@@ -70,12 +71,13 @@ class DebugErrorReporterTest extends \PHPUnit_Framework_TestCase
         ob_start();
 
         $debugErrorReporter->reportError(
-            E_USER_ERROR,
-            'Error message',
-            'example-file.php',
-            10,
-            null,
-            'Error'
+            new \ErrorException(
+                'Error message',
+                E_USER_ERROR,
+                0,
+                'example-file.php',
+                10
+            )
         );
 
         $contents = ob_get_contents();

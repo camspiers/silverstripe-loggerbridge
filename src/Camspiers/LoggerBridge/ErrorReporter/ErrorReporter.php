@@ -7,12 +7,5 @@ namespace Camspiers\LoggerBridge\ErrorReporter;
  */
 interface ErrorReporter
 {
-    /**
-     * @param $errno
-     * @param $errstr
-     * @param $errfile
-     * @param $errline
-     * @param $errtype
-     */
-    public function reportError($errno, $errstr, $errfile, $errline, $errtype);
+    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null);
 }

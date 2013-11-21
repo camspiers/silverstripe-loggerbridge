@@ -435,11 +435,12 @@ class LoggerBridge implements \RequestFilter
                     // Check that $showErrors is on or the site is live
                     if ($this->showErrors || $this->getEnvReporter()->isLive()) {
                         $this->getErrorReporter()->reportError(
-                            $errno,
-                            $errstr,
-                            $errfile,
-                            $errline,
-                            ucfirst($logType)
+                            $this->createException(
+                                $errstr,
+                                $errno,
+                                $errfile,
+                                $errline
+                            )
                         );
                     }
 
@@ -476,13 +477,7 @@ class LoggerBridge implements \RequestFilter
 
         // Exceptions must be reported in general because they stop the regular display of the page
         if ($this->showErrors || $this->getEnvReporter()->isLive()) {
-            $this->getErrorReporter()->reportError(
-                E_USER_ERROR,
-                $message,
-                $exception->getFile(),
-                $exception->getLine(),
-                'Error'
-            );
+            $this->getErrorReporter()->reportError($exception);
         }
     }
 
@@ -516,14 +511,33 @@ class LoggerBridge implements \RequestFilter
             // Fatal errors should be reported when live as they stop the display of regular output
             if ($this->showErrors || $this->getEnvReporter()->isLive()) {
                 $this->getErrorReporter()->reportError(
-                    E_CORE_ERROR,
-                    $error['message'],
-                    $error['file'],
-                    $error['line'],
-                    'Fatal Error'
+                    $this->createException(
+                        $error['message'],
+                        $error['type'],
+                        $error['file'],
+                        $error['line']
+                    )
                 );
             }
         }
+    }
+
+    /**
+     * @param $message
+     * @param $code
+     * @param $filename
+     * @param $lineno
+     * @return \ErrorException
+     */
+    protected function createException($message, $code, $filename, $lineno)
+    {
+        return new \ErrorException(
+            $message,
+            $code,
+            0,
+            $filename,
+            $lineno
+        );
     }
 
     /**
