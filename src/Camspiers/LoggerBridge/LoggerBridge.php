@@ -93,7 +93,9 @@ class LoggerBridge implements \RequestFilter
         'error'   => array(
             E_ERROR,
             E_CORE_ERROR,
-            E_USER_ERROR
+            E_USER_ERROR,
+            E_PARSE,
+            E_COMPILE_ERROR
         ),
         'warning' => array(
             E_WARNING,
@@ -490,6 +492,7 @@ class LoggerBridge implements \RequestFilter
     {
         $error = $this->getLastError();
 
+        
         if ($this->isRegistered() && $this->isFatalError($error)) {
             if ($this->isMemoryExhaustedError($error)) {
                 // We can safely change the memory limit be the reserve amount because if suhosin is relevant
@@ -551,7 +554,9 @@ class LoggerBridge implements \RequestFilter
             $error['type'],
             array(
                 E_ERROR,
-                E_CORE_ERROR
+                E_PARSE,
+                E_CORE_ERROR,
+                E_COMPILE_ERROR
             )
         );
     }
