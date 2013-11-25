@@ -71,16 +71,6 @@ class LoggerBridge implements \RequestFilter
     protected $exceptionHandler;
 
     /**
-     * @var \SS_HTTPRequest
-     */
-    protected $request;
-
-    /**
-     * @var \DataModel
-     */
-    protected $model;
-
-    /**
      * @var bool
      */
     protected $reportBacktrace = false;
@@ -300,7 +290,7 @@ class LoggerBridge implements \RequestFilter
         \Session $session,
         \DataModel $model
     ) {
-        $this->registerGlobalHandlers($request, $model);
+        $this->registerGlobalHandlers();
 
         return true;
     }
@@ -325,17 +315,9 @@ class LoggerBridge implements \RequestFilter
 
     /**
      * Registers global error handlers
-     * @param \SS_HTTPRequest $request
-     * @param \DataModel      $model
      */
-    public function registerGlobalHandlers(
-        \SS_HTTPRequest $request = null,
-        \DataModel $model = null
-    ) {
+    public function registerGlobalHandlers() {
         if (!$this->registered) {
-            // Store the request and model for use in reporting
-            $this->request = $request;
-            $this->model = $model;
             // Store the previous error handler if there was any
             $this->registerErrorHandler();
             // Store the previous exception handler if there was any
@@ -360,8 +342,6 @@ class LoggerBridge implements \RequestFilter
     public function deregisterGlobalHandlers()
     {
         if ($this->registered) {
-            $this->request = null;
-            $this->model = null;
             // Restore the previous error handler if available
             set_error_handler(
                 is_callable($this->errorHandler) ? $this->errorHandler : function () { }
@@ -418,9 +398,7 @@ class LoggerBridge implements \RequestFilter
                 // Log all errors regardless of type
                 $context = array(
                     'file'    => $errfile,
-                    'line'    => $errline,
-                    'request' => $this->format($this->request),
-                    'model'   => $this->format($this->model)
+                    'line'    => $errline
                 );
 
                 if ($this->reportBacktrace) {
@@ -463,9 +441,7 @@ class LoggerBridge implements \RequestFilter
     {
         $context = array(
             'file'    => $exception->getFile(),
-            'line'    => $exception->getLine(),
-            'request' => $this->format($this->request),
-            'model'   => $this->format($this->model)
+            'line'    => $exception->getLine()
         );
 
         if ($this->reportBacktrace) {
@@ -491,7 +467,6 @@ class LoggerBridge implements \RequestFilter
     public function fatalHandler()
     {
         $error = $this->getLastError();
-
         
         if ($this->isRegistered() && $this->isFatalError($error)) {
             if ($this->isMemoryExhaustedError($error)) {
