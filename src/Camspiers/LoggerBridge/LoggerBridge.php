@@ -417,10 +417,10 @@ class LoggerBridge implements \RequestFilter
             if (in_array($errno, $errorTypes)) {
                 // Log all errors regardless of type
                 $context = array(
-                    'errfile'   => $errfile,
-                    'errline'   => $errline,
-                    'request'   => $this->format($this->request),
-                    'model'     => $this->format($this->model)
+                    'file'    => $errfile,
+                    'line'    => $errline,
+                    'request' => $this->format($this->request),
+                    'model'   => $this->format($this->model)
                 );
 
                 if ($this->reportBacktrace) {
@@ -462,10 +462,10 @@ class LoggerBridge implements \RequestFilter
     public function exceptionHandler(\Exception $exception)
     {
         $context = array(
-            'errfile'   => $exception->getFile(),
-            'errline'   => $exception->getLine(),
-            'request'   => $this->format($this->request),
-            'model'     => $this->format($this->model)
+            'file'    => $exception->getFile(),
+            'line'    => $exception->getLine(),
+            'request' => $this->format($this->request),
+            'model'   => $this->format($this->model)
         );
 
         if ($this->reportBacktrace) {
@@ -501,8 +501,8 @@ class LoggerBridge implements \RequestFilter
             }
 
             $context = array(
-                'errfile'   => $error['file'],
-                'errline'   => $error['line']
+                'file' => $error['file'],
+                'line' => $error['line']
             );
 
             if ($this->reportBacktrace) {

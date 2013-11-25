@@ -42,6 +42,9 @@ class BasicBacktraceReporter implements BacktraceReporter
 
         if ($exception instanceof \Exception) {
             $backtrace = $exception->getTrace();
+            foreach ($backtrace as $index => $backtraceCall) {
+                unset($backtrace[$index]['args']);
+            }
         } elseif (version_compare(PHP_VERSION, '5.4.0') >= 0) {
             $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $this->backtraceLimit);
             $skipLimit = true;
