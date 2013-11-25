@@ -27,7 +27,13 @@ class FilteredBacktraceReporterTest extends \PHPUnit_Framework_TestCase
 
         $exception = new \Exception('Test');
 
-        $this->assertEquals($exception->getTrace(), $reporter->getBacktrace($exception));
+        $backtrace = $exception->getTrace();
+
+        foreach ($backtrace as $index => $backtraceCall) {
+            unset($backtrace[$index]['args']);
+        }
+
+        $this->assertEquals($backtrace, $reporter->getBacktrace($exception));
 
         $reporter = new FilteredBacktraceReporter(
             $fns = array(

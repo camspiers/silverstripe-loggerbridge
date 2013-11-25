@@ -760,8 +760,7 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
                 'Uncaught Exception: Message',
                 $this->logicalAnd(
                     $this->contains($exception->getFile()),
-                    $this->contains($exception->getLine()),
-                    $this->contains('')
+                    $this->contains($exception->getLine())
                 )
             );
 
@@ -811,11 +810,14 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         );
 
         $bridge->expects($this->once())
-            ->method('registerGlobalHandlers')
-            ->with($request = $this->getMockWithoutConstructor('SS_HTTPRequest'), $model = $this->getMockWithoutConstructor('DataModel'));
+            ->method('registerGlobalHandlers');
 
         $this->assertTrue(
-            $bridge->preRequest($request, $this->getMockWithoutConstructor('Session'), $model)
+            $bridge->preRequest(
+                $this->getMockWithoutConstructor('SS_HTTPRequest'),
+                $this->getMockWithoutConstructor('Session'),
+                $this->getMockWithoutConstructor('DataModel')
+            )
         );
     }
 

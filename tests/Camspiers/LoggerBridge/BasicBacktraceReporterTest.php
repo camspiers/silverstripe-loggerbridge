@@ -18,8 +18,14 @@ class BasicBacktraceReporterTest extends \PHPUnit_Framework_TestCase
         $reporter = new BasicBacktraceReporter();
 
         $exception = new \Exception('Test');
+        
+        $backtrace = $exception->getTrace();
 
-        $this->assertEquals($exception->getTrace(), $reporter->getBacktrace($exception));
+        foreach ($backtrace as $index => $backtraceCall) {
+            unset($backtrace[$index]['args']);
+        }
+        
+        $this->assertEquals($backtrace, $reporter->getBacktrace($exception));
     }
 
     public function testGetGlobalBacktrace()
