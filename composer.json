@@ -15,7 +15,7 @@
 	},
 	"require": {
 		"composer/installers": "~1.0",
-		"monolog/monolog": "~1.5.0",
+		"monolog/monolog": "~1.7.0",
 		"filp/whoops": "1.*"
 	},
 	"require-dev": {
