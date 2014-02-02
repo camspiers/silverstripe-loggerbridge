@@ -85,7 +85,8 @@ class LoggerBridge implements \RequestFilter
             E_CORE_ERROR,
             E_USER_ERROR,
             E_PARSE,
-            E_COMPILE_ERROR
+            E_COMPILE_ERROR,
+            E_RECOVERABLE_ERROR
         ),
         'warning' => array(
             E_WARNING,
@@ -390,7 +391,7 @@ class LoggerBridge implements \RequestFilter
     {
         // Honour error suppression through @
         if (($errorReporting = error_reporting()) === 0) {
-            return;
+            return true;
         }
 
         foreach ($this->errorLogGroups as $logType => $errorTypes) {
@@ -430,6 +431,9 @@ class LoggerBridge implements \RequestFilter
                 break;
             }
         }
+        
+        // ignore the usually handling of this type of error
+        return true;
     }
 
     /**
