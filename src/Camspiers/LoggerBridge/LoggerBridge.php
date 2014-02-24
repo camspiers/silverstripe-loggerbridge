@@ -473,6 +473,10 @@ class LoggerBridge implements \RequestFilter
         $error = $this->getLastError();
         
         if ($this->isRegistered() && $this->isFatalError($error)) {
+            if (defined('FRAMEWORK_PATH')) {
+                chdir(FRAMEWORK_PATH);
+            }
+
             if ($this->isMemoryExhaustedError($error)) {
                 // We can safely change the memory limit be the reserve amount because if suhosin is relevant
                 // the memory will have been decreased prior to exhaustion
