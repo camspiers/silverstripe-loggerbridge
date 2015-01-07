@@ -99,6 +99,18 @@ class LoggerBridge implements \RequestFilter
             E_STRICT
         )
     );
+    
+    /**
+     * Defines what errors should terminate
+     */
+    protected $terminatingErrors = array(
+        E_ERROR,
+        E_CORE_ERROR,
+        E_USER_ERROR,
+        E_PARSE,
+        E_COMPILE_ERROR,
+        E_RECOVERABLE_ERROR
+    );
 
     /**
      * @param \Psr\Log\LoggerInterface $logger
@@ -393,43 +405,51 @@ class LoggerBridge implements \RequestFilter
         if (($errorReporting = error_reporting()) === 0) {
             return true;
         }
+        
+        $logType = null;
 
-        foreach ($this->errorLogGroups as $logType => $errorTypes) {
+        foreach ($this->errorLogGroups as $candidateLogType => $errorTypes) {
             if (in_array($errno, $errorTypes)) {
-                // Log all errors regardless of type
-                $context = array(
-                    'file'    => $errfile,
-                    'line'    => $errline
-                );
-
-                if ($this->reportBacktrace) {
-                    $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace();
-                }
-
-                $this->logger->$logType($errstr, $context);
-
-                // Check that it is the type of error to report
-                // Check the error_reporting level in comparison with the $errno (honouring the environment)
-                if ($logType === 'error'
-                    &&
-                    ($errno & $errorReporting) === $errno) {
-                    // Check that $showErrors is on or the site is live
-                    if ($this->showErrors || $this->getEnvReporter()->isLive()) {
-                        $this->getErrorReporter()->reportError(
-                            $this->createException(
-                                $errstr,
-                                $errno,
-                                $errfile,
-                                $errline
-                            )
-                        );
-                    }
-
-                    $this->terminate();
-                }
-
+                $logType = $candidateLogType;
                 break;
             }
+        }
+        
+        if (is_null($logType)) {
+            throw new \Exception(sprintf(
+                "No log type found for errno '%s'",
+                $errno
+            ));
+        }
+        
+        // Log all errors regardless of type
+        $context = array(
+            'file' => $errfile,
+            'line' => $errline
+        );
+    
+        if ($this->reportBacktrace) {
+            $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace();
+        }
+    
+        $this->logger->$logType($errstr, $context);
+    
+        // Check the error_reporting level in comparison with the $errno (honouring the environment)
+        // And check that $showErrors is on or the site is live
+        if (($errno & $errorReporting) === $errno &&
+            ($this->showErrors || $this->getEnvReporter()->isLive())) {
+            $this->getErrorReporter()->reportError(
+                $this->createException(
+                    $errstr,
+                    $errno,
+                    $errfile,
+                    $errline
+                )
+            );
+        }
+            
+        if (in_array($errno, $this->terminatingErrors)) {
+            $this->terminate();
         }
         
         // ignore the usually handling of this type of error
