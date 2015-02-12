@@ -2,6 +2,8 @@
 
 use Symfony\Component\ClassLoader\ClassMapGenerator;
 
+define('FRAMEWORK_PATH', dirname(__DIR__) . '/framework');
+
 $filename = __DIR__ . '/../vendor/autoload.php';
 
 if (!file_exists($filename)) {
