@@ -9,5 +9,9 @@ if (!file_exists($filename)) {
     exit(1);
 }
 
-$loader = require_once $filename;
-$loader->addClassMap(ClassMapGenerator::createMap(__DIR__ . '/../framework'));
+$loader = require $filename;
+
+$frameworkClassMap = ClassMapGenerator::createMap(dirname(__DIR__) . '/framework');
+unset($frameworkClassMap['PHPUnit_Framework_TestCase']);
+
+$loader->addClassMap($frameworkClassMap);

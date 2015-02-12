@@ -398,8 +398,8 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge->errorHandler(
             E_USER_WARNING,
             '',
-            '',
-            ''
+            'fake/file/path',
+            1
         );
     }
     /**
@@ -435,8 +435,8 @@ class LoggerBridgeTest extends \PHPUnit_Framework_TestCase
         $bridge->errorHandler(
             E_USER_ERROR,
             '',
-            '',
-            ''
+            'fake/file/path',
+            1
         );
     }
 
