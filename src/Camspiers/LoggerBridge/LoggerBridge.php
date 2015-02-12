@@ -76,6 +76,12 @@ class LoggerBridge implements \RequestFilter
     protected $reportBacktrace = false;
 
     /**
+     * If an ErrorException should be included in the log context when handling errors
+     * @var bool
+     */
+    protected $exceptionInContext = true;
+
+    /**
      * Defines the way error types are logged
      * @var
      */
@@ -271,6 +277,14 @@ class LoggerBridge implements \RequestFilter
     }
 
     /**
+     * @param bool $exceptionInContext
+     */
+    public function setExceptionInContext($exceptionInContext)
+    {
+        $this->exceptionInContext = $exceptionInContext;
+    }
+
+    /**
      * @param string|int $reserveMemory
      */
     public function setReserveMemory($reserveMemory)
@@ -421,6 +435,8 @@ class LoggerBridge implements \RequestFilter
                 $errno
             ));
         }
+
+        $exception = $this->createException($errstr, $errno, $errfile, $errline);
         
         // Log all errors regardless of type
         $context = array(
@@ -431,6 +447,10 @@ class LoggerBridge implements \RequestFilter
         if ($this->reportBacktrace) {
             $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace();
         }
+
+        if ($this->exceptionInContext) {
+            $context['exception'] = $exception;
+        }
     
         $this->logger->$logType($errstr, $context);
     
@@ -438,14 +458,7 @@ class LoggerBridge implements \RequestFilter
         // And check that $showErrors is on or the site is live
         if (($errno & $errorReporting) === $errno &&
             ($this->showErrors || $this->getEnvReporter()->isLive())) {
-            $this->getErrorReporter()->reportError(
-                $this->createException(
-                    $errstr,
-                    $errno,
-                    $errfile,
-                    $errline
-                )
-            );
+            $this->getErrorReporter()->reportError($exception);
         }
             
         if (in_array($errno, $this->terminatingErrors)) {
@@ -470,6 +483,10 @@ class LoggerBridge implements \RequestFilter
 
         if ($this->reportBacktrace) {
             $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace($exception);
+        }
+
+        if ($this->exceptionInContext) {
+            $context['exception'] = $exception;
         }
 
         $this->logger->error(
@@ -503,6 +520,13 @@ class LoggerBridge implements \RequestFilter
                 $this->changeMemoryLimit($this->reserveMemory);
             }
 
+            $exception = $this->createException(
+                $error['message'],
+                $error['type'],
+                $error['file'],
+                $error['line']
+            );
+
             $context = array(
                 'file' => $error['file'],
                 'line' => $error['line']
@@ -512,18 +536,15 @@ class LoggerBridge implements \RequestFilter
                 $context['backtrace'] = $this->getBacktraceReporter()->getBacktrace();
             }
 
+            if ($this->exceptionInContext) {
+                $context['exception'] = $exception;
+            }
+
             $this->logger->critical($error['message'], $context);
 
             // Fatal errors should be reported when live as they stop the display of regular output
             if ($this->showErrors || $this->getEnvReporter()->isLive()) {
-                $this->getErrorReporter()->reportError(
-                    $this->createException(
-                        $error['message'],
-                        $error['type'],
-                        $error['file'],
-                        $error['line']
-                    )
-                );
+                $this->getErrorReporter()->reportError($exception);
             }
         }
     }
