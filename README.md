@@ -4,8 +4,6 @@
 
 Provides easy usage of `PSR-3` loggers (like [monolog](https://github.com/Seldaek/monolog)) in SilverStripe.
 
-The API is currently experimental and as such is at major [version](http://semver.org/) `0`.
-
 ## Installation (composer required)
 
 	$ composer require camspiers/silverstripe-loggerbridge:dev-master
