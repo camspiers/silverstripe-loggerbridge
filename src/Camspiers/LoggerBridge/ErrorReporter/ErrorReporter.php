@@ -7,5 +7,5 @@ namespace Camspiers\LoggerBridge\ErrorReporter;
  */
 interface ErrorReporter
 {
-    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null);
+    public function reportError(\Throwable $exception, \SS_HTTPRequest $request = null);
 }
