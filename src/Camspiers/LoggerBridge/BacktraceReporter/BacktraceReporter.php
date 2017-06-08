@@ -13,5 +13,5 @@ interface BacktraceReporter
      * @param  \Exception $exception
      * @return array
      */
-    public function getBacktrace(\Exception $exception = null);
+    public function getBacktrace(\Throwable $exception = null);
 }

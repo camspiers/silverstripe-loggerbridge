@@ -29,10 +29,10 @@ class FilteredBacktraceReporter extends BasicBacktraceReporter
 
     /**
      * Returns a filtered backtrace using regular expressions
-     * @param  \Exception $exception
+     * @param  \Throwable $exception
      * @return array|void
      */
-    public function getBacktrace(\Exception $exception = null)
+    public function getBacktrace(\Throwable $exception = null)
     {
         $backtrace = parent::getBacktrace($exception);
 

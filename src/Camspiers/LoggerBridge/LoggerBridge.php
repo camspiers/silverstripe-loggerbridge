@@ -471,10 +471,10 @@ class LoggerBridge implements \RequestFilter
 
     /**
      * Handles uncaught exceptions
-     * @param  \Exception  $exception
+     * @param  \Throwable  $exception
      * @return string|void
      */
-    public function exceptionHandler(\Exception $exception)
+    public function exceptionHandler(\Throwable $exception)
     {
         $context = array(
             'file'    => $exception->getFile(),

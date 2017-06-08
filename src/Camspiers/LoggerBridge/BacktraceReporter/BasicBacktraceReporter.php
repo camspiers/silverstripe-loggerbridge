@@ -33,10 +33,10 @@ class BasicBacktraceReporter implements BacktraceReporter
 
     /**
      * Returns a basic backtrace
-     * @param  \Exception $exception
+     * @param  \Throwable $exception
      * @return array
      */
-    public function getBacktrace(\Exception $exception = null)
+    public function getBacktrace(\Throwable $exception = null)
     {
         $skipLimit = false;
 
