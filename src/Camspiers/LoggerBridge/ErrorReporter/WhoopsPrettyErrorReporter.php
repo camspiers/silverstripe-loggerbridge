@@ -33,10 +33,10 @@ class WhoopsPrettyErrorReporter implements ErrorReporter
     }
 
     /**
-     * @param \Exception      $exception
+     * @param mixed           $exception
      * @param \SS_HTTPRequest $request
      */
-    public function reportError(\Exception $exception, \SS_HTTPRequest $request = null)
+    public function reportError($exception, \SS_HTTPRequest $request = null)
     {
         if (!$this->envReporter->isLive()) {
             $whoops = new Run();

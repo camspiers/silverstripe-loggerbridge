@@ -10,8 +10,8 @@ interface BacktraceReporter
 {
     /**
      * Returns a backtrace for logging
-     * @param  \Exception $exception
+     * @param  mixed      $exception
      * @return array
      */
-    public function getBacktrace(\Exception $exception = null);
+    public function getBacktrace($exception = null);
 }
