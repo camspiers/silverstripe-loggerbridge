@@ -7,6 +7,12 @@ In SilverStripe 4.x and newer, `PSR-3` support is built into the core system and
 
 ## Installation (composer required)
 
+1. Install your favourite `PSR-3` logger ([monolog](https://github.com/Seldaek/monolog), for example):
+
+	$ composer require monolog/monolog
+
+2. Install loggerbridge
+
 	$ composer require camspiers/silverstripe-loggerbridge:dev-master
 
 ## Usage
@@ -152,10 +158,10 @@ index bc3f583..4c9f59e 100644
 
 Logger Bridge has good unit test converage. To run the unit tests:
 
-    $ composer install --dev --prefer-dist
+    $ composer install --prefer-dist
     $ phpunit
     
 ---
-##License
+## License
 
 SilverStripe Logger Bridge is released under the [MIT license](http://camspiers.mit-license.org/)
