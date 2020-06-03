@@ -4,6 +4,7 @@ namespace Camspiers\LoggerBridge\ErrorReporter;
 
 use Camspiers\LoggerBridge\EnvReporter\EnvReporter;
 use Debug;
+use Director;
 use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;
 
@@ -38,7 +39,7 @@ class WhoopsPrettyErrorReporter implements ErrorReporter
      */
     public function reportError($exception, \SS_HTTPRequest $request = null)
     {
-        if (!$this->envReporter->isLive()) {
+        if (Director::is_cli() || !$this->envReporter->isLive()) {
             $whoops = new Run();
             $whoops->pushHandler($this->prettyHandler)->handleException($exception);
         } else {
